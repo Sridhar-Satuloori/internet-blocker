@@ -50,6 +50,16 @@ function reloadMainWindow() {
   webContents.once('did-finish-load', () => broadcastState());
 }
 
+logger.initLogger({
+  appRoot: app.isPackaged ? undefined : path.join(__dirname),
+  meta: { phase: 'startup' },
+});
+
+if (process.platform === 'win32') {
+  const { cleanupStaleAppProcesses } = require('./src/process-cleanup');
+  cleanupStaleAppProcesses({ currentPid: process.pid, logger });
+}
+
 const singleInstance = setupSingleInstance(app, {
   onElevatedReplace: (argv) => {
     logger.info('Elevated relaunch detected — closing non-admin instance', { argv });
@@ -73,9 +83,10 @@ if (!singleInstance.shouldRun) {
 }
 
 if (singleInstance.shouldRun && (singleInstance.gotLock || singleInstance.isElevatedRelaunch)) {
-  const { cleanupStaleAppProcesses } = require('./src/process-cleanup');
-  logger.initLogger({ appRoot: path.join(__dirname) });
-  cleanupStaleAppProcesses({ currentPid: process.pid, logger });
+  if (process.platform === 'win32') {
+    const { cleanupStaleAppProcesses } = require('./src/process-cleanup');
+    cleanupStaleAppProcesses({ currentPid: process.pid, logger });
+  }
 }
 
 function showNotification(title, body) {
@@ -715,52 +726,67 @@ function setupIpc() {
 }
 
 app.whenReady().then(async () => {
-  logger.initLogger({
-    userDataPath: app.isPackaged ? app.getPath('userData') : undefined,
-    appRoot: app.getAppPath(),
-    meta: {
-      source: 'main.js',
-      version: app.getVersion(),
-      isPackaged: app.isPackaged,
-      platform: process.platform,
-      execPath: process.execPath,
-      appPath: app.getAppPath(),
-      argv: process.argv,
-      electronRunAsNode: process.env.ELECTRON_RUN_AS_NODE || null,
-      singleInstanceLock: singleInstance.gotLock,
-      isElevatedRelaunch,
-    },
-  });
+  try {
+    logger.initLogger({
+      userDataPath: app.isPackaged ? app.getPath('userData') : undefined,
+      appRoot: app.getAppPath(),
+      meta: {
+        source: 'main.js',
+        version: app.getVersion(),
+        isPackaged: app.isPackaged,
+        platform: process.platform,
+        execPath: process.execPath,
+        appPath: app.getAppPath(),
+        argv: process.argv,
+        electronRunAsNode: process.env.ELECTRON_RUN_AS_NODE || null,
+        singleInstanceLock: singleInstance.gotLock,
+        isElevatedRelaunch,
+      },
+    });
 
-  process.on('uncaughtException', (err) => {
-    logger.error('Uncaught exception', { error: err.message, stack: err.stack });
-  });
+    process.on('uncaughtException', (err) => {
+      logger.error('Uncaught exception', { error: err.message, stack: err.stack });
+      if (app.isPackaged) {
+        dialog.showErrorBox(
+          'Internet Blocker crashed',
+          `${err.message}\n\nLog file:\n${logger.getLogPath()}`
+        );
+      }
+    });
 
-  process.on('unhandledRejection', (reason) => {
-    const message = reason instanceof Error ? reason.message : String(reason);
-    const stack = reason instanceof Error ? reason.stack : undefined;
-    logger.error('Unhandled promise rejection', { error: message, stack });
-  });
+    process.on('unhandledRejection', (reason) => {
+      const message = reason instanceof Error ? reason.message : String(reason);
+      const stack = reason instanceof Error ? reason.stack : undefined;
+      logger.error('Unhandled promise rejection', { error: message, stack });
+    });
 
-  setupTimer();
-  setupScheduler();
-  setupIpc();
-  createWindow();
-  createTray();
+    setupTimer();
+    setupScheduler();
+    setupIpc();
+    createWindow();
+    createTray();
 
-  blocked = isWindows() || isMac() ? await isBlocked(getBlockOptions()) : false;
-  const admin = isWindows() || isMac() ? await isAdmin() : false;
+    blocked = isWindows() || isMac() ? await isBlocked(getBlockOptions()) : false;
+    const admin = isWindows() || isMac() ? await isAdmin() : false;
 
-  logger.info('Application ready', { blocked, isAdmin: admin });
+    logger.info('Application ready', { blocked, isAdmin: admin });
 
-  const config = loadConfig();
-  if (config.autoStartTimer) {
-    timer.start(config.blockAfterMinutes);
+    const config = loadConfig();
+    if (config.autoStartTimer) {
+      timer.start(config.blockAfterMinutes);
+    }
+
+    syncLaunchAtStartup(config.launchAtStartup === true);
+
+    broadcastState();
+  } catch (err) {
+    logger.error('Startup failed', { error: err.message, stack: err.stack });
+    dialog.showErrorBox(
+      'Internet Blocker could not start',
+      `${err.message}\n\nIf this keeps happening, delete the config folder and try again:\n${app.getPath('userData')}\n\nLog file:\n${logger.getLogPath()}`
+    );
+    app.quit();
   }
-
-  syncLaunchAtStartup(config.launchAtStartup === true);
-
-  broadcastState();
 });
 
 app.on('window-all-closed', () => {

@@ -6,21 +6,29 @@ function findInternetBlockerMainPids() {
   }
 
   const ps = `
-$processes = Get-CimInstance Win32_Process -Filter "Name='electron.exe'"
+$processes = Get-CimInstance Win32_Process -Filter "Name='InternetBlocker.exe' OR Name='electron.exe'"
 $mainPids = New-Object System.Collections.Generic.List[int]
 
 foreach ($proc in $processes) {
   $cmd = $proc.CommandLine
   if ($cmd -like '*--type=*') { continue }
 
-  if ($cmd -like '*internet-blocker*') {
+  if ($proc.Name -eq 'InternetBlocker.exe') {
+    [void]$mainPids.Add([int]$proc.ProcessId)
+    continue
+  }
+
+  if ($cmd -like '*internet-blocker*' -or $cmd -like '*InternetBlocker*') {
     [void]$mainPids.Add([int]$proc.ProcessId)
     continue
   }
 
   if ([string]::IsNullOrWhiteSpace($cmd)) {
     foreach ($child in $processes) {
-      if ($child.ParentProcessId -eq $proc.ProcessId -and $child.CommandLine -like '*internet-blocker*') {
+      $childCmd = $child.CommandLine
+      if ($child.ParentProcessId -eq $proc.ProcessId -and (
+        $childCmd -like '*internet-blocker*' -or $childCmd -like '*InternetBlocker*'
+      )) {
         [void]$mainPids.Add([int]$proc.ProcessId)
         break
       }

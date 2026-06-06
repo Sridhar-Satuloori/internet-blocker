@@ -41,14 +41,30 @@ function setupSingleInstance(app, handlers = {}) {
 function exitDuplicateInstance(app) {
   try {
     const logger = require('./logger');
-    logger.initLogger({ appRoot: path.join(__dirname, '..') });
-    logger.info('Duplicate Internet Blocker instance blocked — exiting');
+    logger.initLogger({ meta: { phase: 'duplicate-instance' } });
+    logger.info('Duplicate Internet Blocker instance blocked — showing notice and exiting');
   } catch {
     // Best-effort logging before exit.
   }
 
-  app.exit(2);
-  process.exit(2);
+  app.whenReady().then(() => {
+    const { dialog } = require('electron');
+    dialog.showMessageBoxSync({
+      type: 'info',
+      title: 'Internet Blocker',
+      message: 'Internet Blocker is already running',
+      detail: [
+        'Look for the Internet Blocker icon in the system tray (near the clock).',
+        '',
+        'If no window appears, a background process may be stuck:',
+        '1. Open Task Manager (Ctrl+Shift+Esc)',
+        '2. End any InternetBlocker.exe processes',
+        '3. Launch the app again',
+      ].join('\n'),
+      buttons: ['OK'],
+    });
+    app.quit();
+  });
 }
 
 module.exports = {

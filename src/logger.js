@@ -1,18 +1,55 @@
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 
+const APP_NAME = 'internet-blocker';
 let logFilePath = null;
+
+function isInsideAsar(filePath) {
+  return String(filePath).includes('.asar');
+}
+
+function defaultUserDataPath() {
+  if (process.platform === 'win32') {
+    const appData = process.env.APPDATA || path.join(os.homedir(), 'AppData', 'Roaming');
+    return path.join(appData, APP_NAME);
+  }
+  if (process.platform === 'darwin') {
+    return path.join(os.homedir(), 'Library', 'Application Support', APP_NAME);
+  }
+  const configHome = process.env.XDG_CONFIG_HOME || path.join(os.homedir(), '.config');
+  return path.join(configHome, APP_NAME);
+}
 
 function resolveLogDir(options = {}) {
   if (options.userDataPath) {
     return path.join(options.userDataPath, 'logs');
   }
-  return path.join(options.appRoot || path.join(__dirname, '..'), 'logs');
+
+  const appRoot = options.appRoot || path.join(__dirname, '..');
+  if (!isInsideAsar(appRoot)) {
+    return path.join(appRoot, 'logs');
+  }
+
+  return path.join(defaultUserDataPath(), 'logs');
+}
+
+function ensureLogDir(logDir) {
+  try {
+    fs.mkdirSync(logDir, { recursive: true });
+    return logDir;
+  } catch (err) {
+    if (err.code === 'ENOTDIR' || isInsideAsar(logDir)) {
+      const fallback = path.join(defaultUserDataPath(), 'logs');
+      fs.mkdirSync(fallback, { recursive: true });
+      return fallback;
+    }
+    throw err;
+  }
 }
 
 function initLogger(options = {}) {
-  const logDir = resolveLogDir(options);
-  fs.mkdirSync(logDir, { recursive: true });
+  const logDir = ensureLogDir(resolveLogDir(options));
   logFilePath = path.join(logDir, 'internet-blocker.log');
   write('info', 'Logger initialized', {
     logFile: logFilePath,
@@ -24,7 +61,7 @@ function initLogger(options = {}) {
 
 function getLogPath() {
   if (!logFilePath) {
-    initLogger({ appRoot: path.join(__dirname, '..') });
+    initLogger();
   }
   return logFilePath;
 }
