@@ -4,6 +4,7 @@ const path = require('path');
 const { execFile } = require('child_process');
 const { promisify } = require('util');
 const logger = require('./logger');
+const { resolveExternalScript } = require('./resolve-external-script');
 
 const execFileAsync = promisify(execFile);
 
@@ -102,12 +103,13 @@ function parseLinkSpeedMbps(text) {
 }
 
 async function getWindowsSnapshot() {
-  logger.info('Running Windows network snapshot script', { script: WIN_SCRIPT });
+  const scriptPath = resolveExternalScript(WIN_SCRIPT);
+  logger.info('Running Windows network snapshot script', { script: scriptPath, source: WIN_SCRIPT });
 
   try {
     const { stdout, stderr } = await execFileAsync(
       'powershell.exe',
-      ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', WIN_SCRIPT],
+      ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', scriptPath],
       { windowsHide: true, maxBuffer: 4 * 1024 * 1024 }
     );
 
@@ -128,7 +130,7 @@ async function getWindowsSnapshot() {
     });
     return snapshot;
   } catch (err) {
-    logDiagnosticsError('getWindowsSnapshot failed', err, { script: WIN_SCRIPT });
+    logDiagnosticsError('getWindowsSnapshot failed', err, { script: scriptPath, source: WIN_SCRIPT });
     throw new Error(`Network adapter scan failed: ${err.message}`);
   }
 }

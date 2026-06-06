@@ -2,6 +2,7 @@ const path = require('path');
 const { execFile } = require('child_process');
 const { promisify } = require('util');
 const { hashAppPath } = require('./hosts');
+const { resolveExternalScript } = require('./resolve-external-script');
 
 const execFileAsync = promisify(execFile);
 const WIN_SCRIPT = path.join(__dirname, '..', 'scripts', 'list-running-apps.ps1');
@@ -35,9 +36,10 @@ function parseWindowsOutput(stdout) {
 }
 
 async function listWindowsRunningApps() {
+  const scriptPath = resolveExternalScript(WIN_SCRIPT);
   const { stdout } = await execFileAsync(
     'powershell.exe',
-    ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', WIN_SCRIPT],
+    ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', scriptPath],
     { windowsHide: true, maxBuffer: 16 * 1024 * 1024 }
   );
 

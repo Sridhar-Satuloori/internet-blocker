@@ -2,6 +2,7 @@ const path = require('path');
 const { execFile } = require('child_process');
 const { promisify } = require('util');
 const { hashAppPath } = require('./hosts');
+const { resolveExternalScript } = require('./resolve-external-script');
 
 const execFileAsync = promisify(execFile);
 const SCAN_SCRIPT = path.join(__dirname, '..', 'scripts', 'scan-games.ps1');
@@ -11,9 +12,10 @@ async function scanInstalledGames() {
     return [];
   }
 
+  const scriptPath = resolveExternalScript(SCAN_SCRIPT);
   const { stdout } = await execFileAsync(
     'powershell.exe',
-    ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', SCAN_SCRIPT],
+    ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', scriptPath],
     { windowsHide: true, maxBuffer: 10 * 1024 * 1024 }
   );
 
