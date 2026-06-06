@@ -1,37 +1,54 @@
-const YOUTUBE_DOMAINS = [
-  'youtube.com',
-  'youtu.be',
-  'm.youtube.com',
-  'music.youtube.com',
-  'tv.youtube.com',
-  'youtube-nocookie.com',
-  'youtube.googleapis.com',
-  'youtubei.googleapis.com',
-  'youtubeembeddedplayer.googleapis.com',
-  'googlevideo.com',
-  'redirector.googlevideo.com',
-  'ytimg.com',
-  'i.ytimg.com',
-  's.ytimg.com',
-  'yt3.ggpht.com',
-  'jnn-pa.googleapis.com',
-  'youtube-ui.l.google.com',
-  'youtube-stats.google.com',
-  'wide-youtube.l.google.com',
-  'studio.youtube.com',
-];
+const fs = require('fs');
+const path = require('path');
 
-const PACKS = {
-  youtube: {
-    id: 'youtube',
-    name: 'YouTube block pack',
-    description: 'Blocks ~20 YouTube-related domains via the hosts file.',
-    domains: YOUTUBE_DOMAINS,
-  },
-};
+function resolveConfigPath() {
+  try {
+    const { app } = require('electron');
+    if (app?.isPackaged) {
+      return path.join(app.getAppPath(), 'config', 'domain-packs.json');
+    }
+  } catch {
+    // electron not available during some tooling runs
+  }
+
+  return path.join(__dirname, '..', 'config', 'domain-packs.json');
+}
+
+function loadPacksFromConfig() {
+  const configPath = resolveConfigPath();
+  const raw = fs.readFileSync(configPath, 'utf8');
+  const data = JSON.parse(raw);
+  const packs = {};
+
+  for (const pack of data.packs || []) {
+    if (!pack?.id || !pack?.name || !Array.isArray(pack.domains)) {
+      continue;
+    }
+
+    const domains = [...new Set(
+      pack.domains
+        .map((domain) => String(domain).toLowerCase().trim())
+        .filter((domain) => /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9-][a-z0-9-]*)+$/.test(domain)),
+    )];
+
+    if (domains.length === 0) {
+      continue;
+    }
+
+    packs[pack.id] = {
+      id: pack.id,
+      name: pack.name,
+      description: pack.description || '',
+      domains,
+    };
+  }
+
+  return { configPath, packs, note: data.note || '' };
+}
 
 function listDomainPacks() {
-  return Object.values(PACKS).map(({ id, name, description, domains }) => ({
+  const { packs } = loadPacksFromConfig();
+  return Object.values(packs).map(({ id, name, description, domains }) => ({
     id,
     name,
     description,
@@ -40,7 +57,22 @@ function listDomainPacks() {
 }
 
 function getDomainPack(packId) {
-  return PACKS[packId] || null;
+  const { packs } = loadPacksFromConfig();
+  return packs[packId] || null;
+}
+
+function getDomainPacksMeta() {
+  const { configPath, packs, note } = loadPacksFromConfig();
+  return {
+    configPath,
+    note,
+    packs: Object.values(packs).map(({ id, name, description, domains }) => ({
+      id,
+      name,
+      description,
+      domainCount: domains.length,
+    })),
+  };
 }
 
 function domainsToWebsiteEntries(domains, packId = null) {
@@ -68,6 +100,7 @@ function mergeWebsiteEntries(existing, newEntries) {
 module.exports = {
   listDomainPacks,
   getDomainPack,
+  getDomainPacksMeta,
   domainsToWebsiteEntries,
   mergeWebsiteEntries,
 };

@@ -8,9 +8,9 @@ function loadIcon(filename) {
     return nativeImage.createEmpty();
   }
   if (process.platform === 'darwin') {
-    image = image.resize({ width: 18, height: 18 });
+    image = image.resize({ width: 18, height: 18, quality: 'best' });
   } else if (process.platform === 'win32') {
-    image = image.resize({ width: 16, height: 16 });
+    image = image.resize({ width: 16, height: 16, quality: 'best' });
   }
   return image;
 }

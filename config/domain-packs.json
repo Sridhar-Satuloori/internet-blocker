@@ -1,0 +1,159 @@
+{
+  "version": 1,
+  "note": "Edit the domains arrays below to add or remove sites. Changes take effect the next time you open Websites & DNS or restart the app.",
+  "packs": [
+    {
+      "id": "youtube",
+      "name": "YouTube",
+      "description": "YouTube video, CDN, and API domains",
+      "domains": [
+        "youtube.com",
+        "www.youtube.com",
+        "youtu.be",
+        "m.youtube.com",
+        "music.youtube.com",
+        "tv.youtube.com",
+        "studio.youtube.com",
+        "youtube-nocookie.com",
+        "youtube.googleapis.com",
+        "youtubei.googleapis.com",
+        "youtubeembeddedplayer.googleapis.com",
+        "googlevideo.com",
+        "redirector.googlevideo.com",
+        "ytimg.com",
+        "i.ytimg.com",
+        "s.ytimg.com",
+        "yt3.ggpht.com",
+        "jnn-pa.googleapis.com",
+        "youtube-ui.l.google.com",
+        "youtube-stats.google.com",
+        "wide-youtube.l.google.com"
+      ]
+    },
+    {
+      "id": "tiktok",
+      "name": "TikTok",
+      "description": "TikTok web, API, and CDN domains",
+      "domains": [
+        "tiktok.com",
+        "www.tiktok.com",
+        "m.tiktok.com",
+        "vm.tiktok.com",
+        "v.tiktok.com",
+        "v16-web.tiktok.com",
+        "api.tiktok.com",
+        "tiktokv.com",
+        "tiktokcdn.com",
+        "tiktokcdn-us.com",
+        "muscdn.com",
+        "musical.ly",
+        "snssdk.com",
+        "byteoversea.com",
+        "ibyteimg.com",
+        "log.tiktokv.com"
+      ]
+    },
+    {
+      "id": "meta",
+      "name": "Instagram & Facebook",
+      "description": "Meta social apps — Instagram, Facebook, and Messenger",
+      "domains": [
+        "instagram.com",
+        "www.instagram.com",
+        "cdninstagram.com",
+        "facebook.com",
+        "www.facebook.com",
+        "m.facebook.com",
+        "fb.com",
+        "fbcdn.net",
+        "fbcdn.com",
+        "messenger.com",
+        "www.messenger.com"
+      ]
+    },
+    {
+      "id": "twitter",
+      "name": "Twitter / X",
+      "description": "Twitter and X web, API, and media domains",
+      "domains": [
+        "twitter.com",
+        "www.twitter.com",
+        "mobile.twitter.com",
+        "x.com",
+        "www.x.com",
+        "t.co",
+        "twimg.com",
+        "abs.twimg.com",
+        "pbs.twimg.com",
+        "video.twimg.com",
+        "api.twitter.com",
+        "ton.twitter.com"
+      ]
+    },
+    {
+      "id": "reddit",
+      "name": "Reddit",
+      "description": "Reddit web, short links, and media domains",
+      "domains": [
+        "reddit.com",
+        "www.reddit.com",
+        "old.reddit.com",
+        "new.reddit.com",
+        "redd.it",
+        "redditstatic.com",
+        "redditmedia.com",
+        "i.redd.it",
+        "preview.redd.it",
+        "v.redd.it",
+        "gql.reddit.com"
+      ]
+    },
+    {
+      "id": "twitch",
+      "name": "Twitch",
+      "description": "Twitch streaming and CDN domains",
+      "domains": [
+        "twitch.tv",
+        "www.twitch.tv",
+        "m.twitch.tv",
+        "clips.twitch.tv",
+        "player.twitch.tv",
+        "twitchcdn.net",
+        "ttvnw.net",
+        "jtvnw.net",
+        "static-cdn.jtvnw.net",
+        "usher.ttvnw.net"
+      ]
+    },
+    {
+      "id": "netflix",
+      "name": "Netflix",
+      "description": "Netflix web and streaming CDN domains",
+      "domains": [
+        "netflix.com",
+        "www.netflix.com",
+        "nflxvideo.net",
+        "nflxext.com",
+        "nflximg.net",
+        "nflxso.net",
+        "api.netflix.com"
+      ]
+    },
+    {
+      "id": "discord",
+      "name": "Discord",
+      "description": "Discord web and CDN domains (desktop app needs Apps blocking too)",
+      "domains": [
+        "discord.com",
+        "www.discord.com",
+        "discordapp.com",
+        "discord.gg",
+        "discord.media",
+        "discord.co",
+        "gateway.discord.gg",
+        "cdn.discordapp.com",
+        "media.discordapp.net"
+      ]
+    }
+  ]
+}

@@ -39,9 +39,8 @@ function launchElectron(attempt = 0) {
 
   child.on('close', (code) => {
     const elapsedMs = Date.now() - startedAt;
-    const shouldRetryDevHandoff = code === 0
+    const shouldRetryDevHandoff = code === 2
       && attempt < maxDevHandoffRetries
-      && elapsedMs < 5000
       && !args.some((arg) => String(arg).includes('elevated-relaunch'));
 
     if (shouldRetryDevHandoff) {

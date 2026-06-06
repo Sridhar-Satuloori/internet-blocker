@@ -4,7 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'">
-  <title>Internet Blocker</title>
+  <title>Internet Blocker — Focus &amp; Internet Control</title>
+  <meta name="description" content="Block websites, apps, and games on a focus timer or daily schedule. Windows and macOS internet blocker with firewall, hosts file, and DNS controls.">
+  <meta name="application-name" content="Internet Blocker">
+  <meta name="author" content="Sridhar Satuloori">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -34,25 +37,44 @@
           <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M5 5l14 14"/></svg></span>
           <span class="nav-label">Total Blockout</span>
         </button>
-        <button type="button" class="nav-item" data-view="timer" title="Focus Timer">
-          <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="13" r="8"/><path d="M12 9V13l3 2"/><path d="M9 2h6"/></svg></span>
-          <span class="nav-label">Focus Timer</span>
-        </button>
-        <button type="button" class="nav-item" data-view="schedule" title="Daily Schedule">
-          <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18"/></svg></span>
-          <span class="nav-label">Daily Schedule</span>
-        </button>
-        <button type="button" class="nav-item" data-view="apps" title="Apps">
-          <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M8 21h8"/></svg></span>
-          <span class="nav-label">Apps</span>
-        </button>
+
+        <div class="nav-group expanded" data-nav-group="automation">
+          <button type="button" class="nav-group-toggle" aria-expanded="true">
+            <span class="nav-group-twisty" aria-hidden="true"></span>
+            <span class="nav-label" data-nav-group-label="automation">Automation</span>
+          </button>
+          <div class="nav-group-items">
+            <button type="button" class="nav-item" data-view="timer" title="Focus Timer">
+              <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="13" r="8"/><path d="M12 9V13l3 2"/><path d="M9 2h6"/></svg></span>
+              <span class="nav-label">Focus Timer</span>
+            </button>
+            <button type="button" class="nav-item" data-view="schedule" title="Daily Schedule">
+              <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18"/></svg></span>
+              <span class="nav-label">Daily Schedule</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="nav-group expanded" data-nav-group="programs">
+          <button type="button" class="nav-group-toggle" aria-expanded="true">
+            <span class="nav-group-twisty" aria-hidden="true"></span>
+            <span class="nav-label" data-nav-group-label="programs">Programs</span>
+          </button>
+          <div class="nav-group-items">
+            <button type="button" class="nav-item" data-view="apps" title="Apps">
+              <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M8 21h8"/></svg></span>
+              <span class="nav-label">Apps</span>
+            </button>
+            <button type="button" class="nav-item" data-view="games" title="Games">
+              <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 12h4M8 10v4M15 13h.01M18 11h.01"/><rect x="2" y="6" width="20" height="12" rx="4"/></svg></span>
+              <span class="nav-label">Games</span>
+            </button>
+          </div>
+        </div>
+
         <button type="button" class="nav-item" data-view="websites" title="Websites &amp; DNS">
           <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M2 12h20M12 2a15 15 0 010 20M12 2a15 15 0 000 20"/></svg></span>
           <span class="nav-label">Websites &amp; DNS</span>
-        </button>
-        <button type="button" class="nav-item" data-view="games" title="Games">
-          <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 12h4M8 10v4M15 13h.01M18 11h.01"/><rect x="2" y="6" width="20" height="12" rx="4"/></svg></span>
-          <span class="nav-label">Games</span>
         </button>
         <button type="button" class="nav-item" data-view="speed" title="Network Speed">
           <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20v-6M12 4v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M4 12h2M18 12h2"/><path d="M12 14a2 2 0 100-4 2 2 0 000 4z"/><path d="M12 2a10 10 0 0110 10"/></svg></span>
@@ -94,6 +116,10 @@
               <span class="timer-caption">until blocks activate</span>
             </div>
             <div class="summary-grid" id="summary-grid"></div>
+            <div class="callout callout-danger" id="overview-blockout-warning" hidden>
+              <strong>Total blockout is enabled</strong>
+              <p>Applying blocks will cut <em>all</em> outbound internet for every app — not just the sites and apps you selected. Turn it off under <strong>Total Blockout</strong> for selective blocking only.</p>
+            </div>
             <div class="hero-actions">
               <button type="button" class="btn danger large" id="block-now-btn">Apply all blocks now</button>
               <button type="button" class="btn success large" id="unblock-btn" disabled>Remove all blocks</button>
@@ -102,10 +128,19 @@
           </section>
 
           <section class="view" id="view-blockout">
-            <header class="view-header"><h1>Total Blockout</h1><p>Cut all outbound internet for the entire system</p></header>
+            <header class="view-header"><h1>Total Blockout</h1><p>Cut all outbound internet for the entire system — use with caution</p></header>
+            <div class="callout callout-danger" id="blockout-warning">
+              <strong>Extreme mode — blocks everything</strong>
+              <p>Total blockout stops <em>all</em> outbound internet for every app on this computer. Email, chat, video calls, cloud sync, game launchers, and software updates will stop working.</p>
+              <p>To block only specific sites (YouTube, TikTok, Reddit, etc.), use <strong>Websites &amp; DNS</strong> instead and leave total blockout <strong>off</strong>.</p>
+            </div>
             <div class="panel">
-              <p class="panel-lead">Blocks every app's outbound traffic via the system firewall. This is the strongest mode.</p>
-              <label class="checkbox-row"><input type="checkbox" id="block-all" checked>Include total blockout when blocking activates</label>
+              <p class="panel-lead">Adds a system firewall rule that blocks outbound traffic from every application. Only enable if you intentionally want zero internet access.</p>
+              <label class="checkbox-row blockout-checkbox">
+                <input type="checkbox" id="block-all">
+                <span>Include total blockout when applying blocks</span>
+              </label>
+              <p class="hint" id="blockout-enabled-hint" hidden>Total blockout is enabled — applying blocks will cut all internet, not just your selected sites and apps.</p>
               <div class="actions">
                 <button type="button" class="btn danger" id="blockout-now-btn">Block all internet now</button>
                 <button type="button" class="btn success" id="blockout-restore-btn" disabled>Restore internet</button>
@@ -169,7 +204,11 @@
           <section class="view" id="view-websites">
             <header class="view-header"><h1>Websites &amp; DNS</h1><p>Block domains via hosts file and optional family-safe DNS</p></header>
             <div class="panel">
-              <div class="pack-row"><button type="button" class="btn small secondary" id="add-youtube-pack-btn">Add YouTube pack (~20 domains)</button></div>
+              <div class="sub-header"><span>Site groups</span></div>
+              <p class="hint" id="domain-packs-hint">Block popular sites in one click. Domain lists: <code>config/domain-packs.json</code>.</p>
+              <label class="checkbox-row"><input type="checkbox" id="apply-blocks-on-pack-add" checked>Apply blocks immediately when blocking a site group</label>
+              <p class="hint">Tip: to block only specific sites (not all internet), turn off <strong>Total blockout</strong> under that menu first.</p>
+              <div class="pack-row" id="domain-packs-row"></div>
               <label class="checkbox-row"><input type="checkbox" id="use-dns-blocking">Use family-safe DNS while blocking</label>
               <label for="dns-provider">DNS provider</label>
               <select id="dns-provider" class="select-input"></select>
@@ -279,13 +318,13 @@
 
             <div class="panel">
               <h3 class="settings-group-title">Appearance</h3>
-              <label class="checkbox-row"><input type="checkbox" id="show-details-bar" checked>Show details bar at bottom</label>
-              <p class="hint">Displays where firewall rules, hosts entries, and DNS changes are applied.</p>
+              <label class="checkbox-row"><input type="checkbox" id="show-details-bar">Show details bar at bottom</label>
+              <p class="hint">Displays where firewall rules, hosts entries, and DNS changes are applied. Default is off — edit <code>config/app-defaults.json</code> to change.</p>
             </div>
 
             <div class="panel">
               <h3 class="settings-group-title">App behavior</h3>
-              <label class="checkbox-row"><input type="checkbox" id="minimize-tray" checked>Minimize to system tray when closed</label>
+              <p class="hint">Minimize hides the app to the system tray. Close (X) fully exits the app.</p>
               <label class="checkbox-row"><input type="checkbox" id="launch-at-startup">Launch at login</label>
               <label class="checkbox-row"><input type="checkbox" id="notify-on-block" checked>Notify when blocks are applied</label>
               <label class="checkbox-row"><input type="checkbox" id="notify-on-unblock" checked>Notify when blocks are removed</label>
@@ -315,6 +354,9 @@
 
             <div class="panel">
               <h3 class="settings-group-title">Advanced</h3>
+              <label>Default settings file</label>
+              <input type="text" id="defaults-path" readonly class="readonly-input">
+              <p class="hint" id="defaults-path-hint">Factory defaults for new installs. Edit <code>config/app-defaults.json</code> and <code>config/ui.json</code> in the project folder.</p>
               <label>Config file location</label>
               <input type="text" id="config-path" readonly class="readonly-input">
               <label>Debug log file</label>

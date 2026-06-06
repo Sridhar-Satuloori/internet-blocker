@@ -47,8 +47,8 @@ function exitDuplicateInstance(app) {
     // Best-effort logging before exit.
   }
 
-  app.exit(0);
-  process.exit(0);
+  app.exit(2);
+  process.exit(2);
 }
 
 module.exports = {

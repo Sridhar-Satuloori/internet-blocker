@@ -1,12 +1,18 @@
 const { app, BrowserWindow, ipcMain, Tray, Menu, dialog, Notification, shell } = require('electron');
 const path = require('path');
-const { loadConfig, saveConfig } = require('./src/config');
+const { loadConfig, saveConfig, getDefaultsMeta } = require('./src/config');
+const { getUiConfig } = require('./src/ui-config');
 const { FocusTimer } = require('./src/timer');
 const { DailyScheduler } = require('./src/scheduler');
 const { blockInternet, unblockInternet, isBlocked, isAdmin, isWindows, isMac, hashAppPath } = require('./src/firewall');
 const { hashPassword, verifyPassword, hasPassword } = require('./src/password');
 const { getTrayIcon } = require('./src/tray-icon');
-const { listDomainPacks, getDomainPack, domainsToWebsiteEntries, mergeWebsiteEntries } = require('./src/domain-packs');
+const {
+  getDomainPack,
+  getDomainPacksMeta,
+  domainsToWebsiteEntries,
+  mergeWebsiteEntries,
+} = require('./src/domain-packs');
 const { listDnsProviders } = require('./src/dns');
 const { scanInstalledGames } = require('./src/game-scanner');
 const { listRunningApps } = require('./src/running-apps');
@@ -171,12 +177,7 @@ function updateTray(state) {
     { type: 'separator' },
     {
       label: 'Show Window',
-      click: () => {
-        if (mainWindow) {
-          mainWindow.show();
-          mainWindow.focus();
-        }
-      },
+      click: showMainWindow,
     },
     { type: 'separator' },
     {
@@ -330,24 +331,41 @@ function createWindow() {
     broadcastState();
   });
 
-  mainWindow.on('close', (event) => {
-    const config = loadConfig();
-    if (!app.isQuitting && config.minimizeToTray) {
-      event.preventDefault();
-      mainWindow.hide();
-    }
+  mainWindow.on('minimize', () => {
+    mainWindow.hide();
   });
+
+  mainWindow.on('close', () => {
+    if (app.isQuitting) return;
+    app.isQuitting = true;
+    destroyTray();
+    app.quit();
+  });
+
+  mainWindow.on('closed', () => {
+    mainWindow = null;
+  });
+}
+
+function destroyTray() {
+  if (tray && !tray.isDestroyed()) {
+    tray.destroy();
+  }
+  tray = null;
+}
+
+function showMainWindow() {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  if (mainWindow.isMinimized()) mainWindow.restore();
+  if (!mainWindow.isVisible()) mainWindow.show();
+  mainWindow.focus();
 }
 
 function createTray() {
   tray = new Tray(getTrayIcon());
   tray.setToolTip('Internet Blocker');
-  tray.on('double-click', () => {
-    if (mainWindow) {
-      mainWindow.show();
-      mainWindow.focus();
-    }
-  });
+  tray.on('click', showMainWindow);
+  tray.on('double-click', showMainWindow);
   updateTray(getAppState());
 }
 
@@ -410,10 +428,12 @@ function restartScheduler() {
 function setupIpc() {
   ipcMain.handle('get-status', () => refreshAdminStatus());
 
-  ipcMain.handle('get-domain-packs', () => listDomainPacks());
+  ipcMain.handle('get-domain-packs', () => getDomainPacksMeta());
+  ipcMain.handle('get-defaults-meta', () => getDefaultsMeta());
+  ipcMain.handle('get-ui-config', () => getUiConfig());
   ipcMain.handle('get-dns-providers', () => listDnsProviders());
 
-  ipcMain.handle('apply-domain-pack', (_event, packId) => {
+  ipcMain.handle('apply-domain-pack', async (_event, packId, options = {}) => {
     const pack = getDomainPack(packId);
     if (!pack) {
       throw new Error('Unknown domain pack.');
@@ -425,8 +445,21 @@ function setupIpc() {
     const blockedWebsites = mergeWebsiteEntries(current.blockedWebsites || [], entries);
     saveConfig({ ...current, blockedWebsites });
     restartScheduler();
+
+    let blockedNow = false;
+    if (options.applyNow) {
+      blockedNow = await applyBlock('manual');
+      if (!blockedNow) {
+        throw new Error('Domains added, but applying blocks failed. Try Run as Admin, then Apply all blocks.');
+      }
+    }
+
     broadcastState();
-    return { added: blockedWebsites.length - before, total: blockedWebsites.length };
+    return {
+      added: blockedWebsites.length - before,
+      total: blockedWebsites.length,
+      blocked: blockedNow,
+    };
   });
 
   ipcMain.handle('scan-games', async () => {
@@ -731,14 +764,26 @@ app.whenReady().then(async () => {
 });
 
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    // Keep running in tray on Windows
+  if (process.platform === 'darwin') return;
+  if (!app.isQuitting) {
+    app.isQuitting = true;
   }
+  destroyTray();
+  app.quit();
 });
 
-app.on('before-quit', async () => {
+app.on('before-quit', () => {
   logger.info('Application quitting', { isQuitting: app.isQuitting });
   app.isQuitting = true;
+  destroyTray();
   if (timer) timer.stop({ silent: true });
   if (scheduler) scheduler.stop({ silent: true });
+});
+
+app.on('will-quit', () => {
+  destroyTray();
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.destroy();
+    mainWindow = null;
+  }
 });

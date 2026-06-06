@@ -1,4 +1,4 @@
-const navItems = document.querySelectorAll('.nav-item');
+const navItems = () => document.querySelectorAll('.nav-item[data-view]');
 const views = document.querySelectorAll('.view');
 const shell = document.getElementById('shell');
 const mainArea = document.querySelector('.main-area');
@@ -9,7 +9,6 @@ const detailsTitle = document.getElementById('details-title');
 
 const minutesInput = document.getElementById('minutes');
 const autoStartInput = document.getElementById('auto-start');
-const minimizeTrayInput = document.getElementById('minimize-tray');
 const scheduleEnabledInput = document.getElementById('schedule-enabled');
 const blockTimeInput = document.getElementById('block-time');
 const unblockTimeInput = document.getElementById('unblock-time');
@@ -31,7 +30,11 @@ const refreshRunningAppsBtn = document.getElementById('refresh-running-apps-btn'
 const blockedWebsitesList = document.getElementById('blocked-websites-list');
 const appsEmptyHint = document.getElementById('apps-empty');
 const websitesEmptyHint = document.getElementById('websites-empty');
-const addYoutubePackBtn = document.getElementById('add-youtube-pack-btn');
+const domainPacksRow = document.getElementById('domain-packs-row');
+const domainPacksHint = document.getElementById('domain-packs-hint');
+const applyBlocksOnPackAddInput = document.getElementById('apply-blocks-on-pack-add');
+const defaultsPathInput = document.getElementById('defaults-path');
+const defaultsPathHint = document.getElementById('defaults-path-hint');
 const useDnsBlockingInput = document.getElementById('use-dns-blocking');
 const dnsProviderSelect = document.getElementById('dns-provider');
 const scanGamesBtn = document.getElementById('scan-games-btn');
@@ -51,6 +54,8 @@ const blockNowBtn = document.getElementById('block-now-btn');
 const unblockBtn = document.getElementById('unblock-btn');
 const blockoutNowBtn = document.getElementById('blockout-now-btn');
 const blockoutRestoreBtn = document.getElementById('blockout-restore-btn');
+const blockoutEnabledHint = document.getElementById('blockout-enabled-hint');
+const overviewBlockoutWarning = document.getElementById('overview-blockout-warning');
 const adminBtn = document.getElementById('admin-btn');
 const adminBtnIcon = document.getElementById('admin-btn-icon');
 const adminBtnLabel = document.getElementById('admin-btn-label');
@@ -141,23 +146,73 @@ const VIEW_DETAILS = {
   settings: 'Settings — app config, password hash, and preferences',
 };
 
+function setNavGroupExpanded(group, expanded) {
+  if (!group) return;
+  const toggle = group.querySelector('.nav-group-toggle');
+  group.classList.toggle('expanded', expanded);
+  if (toggle) toggle.setAttribute('aria-expanded', String(expanded));
+}
+
+function setupNavGroupToggles() {
+  document.querySelectorAll('.nav-group-toggle').forEach((toggle) => {
+    toggle.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const group = toggle.closest('.nav-group');
+      if (!group) return;
+      setNavGroupExpanded(group, !group.classList.contains('expanded'));
+    });
+  });
+}
+
 function showView(viewId) {
   activeView = viewId;
-  navItems.forEach((item) => {
+  navItems().forEach((item) => {
     item.classList.toggle('active', item.dataset.view === viewId);
+  });
+  document.querySelectorAll('.nav-group').forEach((group) => {
+    const childActive = group.querySelector(`.nav-item[data-view="${viewId}"]`);
+    group.classList.toggle('has-active', Boolean(childActive));
+    if (childActive) {
+      setNavGroupExpanded(group, true);
+    }
   });
   views.forEach((view) => {
     view.classList.toggle('active', view.id === `view-${viewId}`);
   });
-  if (currentState) renderDetailsBar(currentState);
+  if (currentState?.config?.showDetailsBar === true) {
+    renderDetailsBar(currentState);
+  }
   if (viewId === 'apps') {
     refreshRunningApps();
   }
 }
 
-navItems.forEach((item) => {
+async function setupNavGroups() {
+  try {
+    const { navGroups } = await window.blocker.getUiConfig();
+    for (const groupConfig of navGroups || []) {
+      const group = document.querySelector(`[data-nav-group="${groupConfig.id}"]`);
+      if (!group) continue;
+      const label = group.querySelector(`[data-nav-group-label="${groupConfig.id}"]`);
+      if (label && groupConfig.label) {
+        label.textContent = groupConfig.label;
+      }
+      setNavGroupExpanded(group, groupConfig.expanded !== false);
+    }
+
+  } catch {
+    document.querySelectorAll('.nav-group').forEach((group) => setNavGroupExpanded(group, true));
+  }
+}
+
+setupNavGroupToggles();
+
+navItems().forEach((item) => {
   item.addEventListener('click', () => showView(item.dataset.view));
 });
+
+setupNavGroups();
 
 function setDetailsBarVisible(visible) {
   mainArea.classList.toggle('details-hidden', !visible);
@@ -202,8 +257,8 @@ function renderDetailsBar(state) {
     rows.push(
       detailRow(
         'Blockout rule',
-        blocked && config.blockAllInternet !== false ? 'InternetBlocker-BlockOutbound (active)' : 'Not applied yet',
-        { active: blocked && config.blockAllInternet !== false, inactive: !blocked }
+        blocked && config.blockAllInternet === true ? 'InternetBlocker-BlockOutbound (active)' : 'Not applied yet',
+        { active: blocked && config.blockAllInternet === true, inactive: !blocked }
       )
     );
   }
@@ -293,7 +348,7 @@ function formatMs(ms) {
 
 function buildBlockedDetail(config) {
   const parts = [];
-  if (config.blockAllInternet !== false) parts.push('total blockout');
+  if (config.blockAllInternet === true) parts.push('total blockout');
   if ((config.blockedApps || []).length) parts.push(`${config.blockedApps.length} app(s)/game(s)`);
   if ((config.blockedWebsites || []).length) parts.push(`${config.blockedWebsites.length} website(s)`);
   if (config.useDnsBlocking) parts.push('DNS filtering');
@@ -344,9 +399,9 @@ function renderSummaryGrid(state) {
     },
     {
       title: 'Total Blockout',
-      value: config.blockAllInternet !== false ? 'Enabled in config' : 'Selective only',
-      state: blocked && config.blockAllInternet !== false ? 'Active now' : 'Not active',
-      active: blocked && config.blockAllInternet !== false,
+      value: config.blockAllInternet === true ? 'Enabled in config' : 'Selective only',
+      state: blocked && config.blockAllInternet === true ? 'Active now' : 'Not active',
+      active: blocked && config.blockAllInternet === true,
     },
     {
       title: 'Apps / Games',
@@ -621,8 +676,10 @@ function applyState(state) {
 
   minutesInput.value = config.blockAfterMinutes;
   autoStartInput.checked = config.autoStartTimer;
-  minimizeTrayInput.checked = config.minimizeToTray;
-  showDetailsBarInput.checked = config.showDetailsBar !== false;
+  showDetailsBarInput.checked = config.showDetailsBar === true;
+  if (applyBlocksOnPackAddInput) {
+    applyBlocksOnPackAddInput.checked = config.applyBlocksOnPackAdd !== false;
+  }
   launchAtStartupInput.checked = config.launchAtStartup === true;
   notifyOnBlockInput.checked = config.notifyOnBlock !== false;
   notifyOnUnblockInput.checked = config.notifyOnUnblock !== false;
@@ -634,7 +691,13 @@ function applyState(state) {
   unblockTimeInput.value = config.dailySchedule?.unblockTime ?? '07:00';
   blockTimeInput.disabled = !scheduleEnabledInput.checked;
   unblockTimeInput.disabled = !scheduleEnabledInput.checked;
-  blockAllInput.checked = config.blockAllInternet !== false;
+  blockAllInput.checked = config.blockAllInternet === true;
+  if (blockoutEnabledHint) {
+    blockoutEnabledHint.hidden = !blockAllInput.checked;
+  }
+  if (overviewBlockoutWarning) {
+    overviewBlockoutWarning.hidden = config.blockAllInternet !== true;
+  }
   useDnsBlockingInput.checked = config.useDnsBlocking === true;
   dnsProviderSelect.disabled = !useDnsBlockingInput.checked;
   blockedApps = config.blockedApps || [];
@@ -646,8 +709,8 @@ function applyState(state) {
 
   renderTargetLists();
   renderSummaryGrid(state);
-  setDetailsBarVisible(config.showDetailsBar !== false);
-  if (config.showDetailsBar !== false) renderDetailsBar(state);
+  setDetailsBarVisible(config.showDetailsBar === true);
+  if (config.showDetailsBar === true) renderDetailsBar(state);
 
   setSidebarCollapsed(config.sidebarCollapsed === true);
 
@@ -715,8 +778,8 @@ async function saveTimerSettings() {
 
 async function saveSettings() {
   await window.blocker.saveConfig({
-    minimizeToTray: minimizeTrayInput.checked,
     showDetailsBar: showDetailsBarInput.checked,
+    applyBlocksOnPackAdd: applyBlocksOnPackAddInput?.checked !== false,
     launchAtStartup: launchAtStartupInput.checked,
     notifyOnBlock: notifyOnBlockInput.checked,
     notifyOnUnblock: notifyOnUnblockInput.checked,
@@ -767,9 +830,25 @@ async function performUnblock(password) {
   }
 }
 
+function confirmTotalBlockoutAction(actionLabel) {
+  return confirm(
+    `${actionLabel}\n\n`
+    + 'TOTAL BLOCKOUT is enabled. This will cut ALL outbound internet for every app on this computer — '
+    + 'not just selected websites or apps.\n\n'
+    + 'Email, chat, updates, and other online services will stop working until you remove blocks.\n\n'
+    + 'To block only specific sites, cancel, open Total Blockout, turn that option off, and use Websites & DNS instead.',
+  );
+}
+
 async function applyBlocksNow() {
   const config = currentState?.config || {};
-  if (config.confirmBeforeBlock && !confirm('Apply all configured blocks now?')) {
+  const includesTotalBlockout = blockAllInput?.checked || config.blockAllInternet === true;
+
+  if (includesTotalBlockout) {
+    if (!confirmTotalBlockoutAction('Apply all blocks now?')) {
+      return;
+    }
+  } else if (config.confirmBeforeBlock && !confirm('Apply all configured blocks now?')) {
     return;
   }
 
@@ -785,7 +864,7 @@ minutesInput.addEventListener('change', saveTimerSettings);
 autoStartInput.addEventListener('change', saveTimerSettings);
 
 showDetailsBarInput.addEventListener('change', saveSettings);
-minimizeTrayInput.addEventListener('change', saveSettings);
+applyBlocksOnPackAddInput?.addEventListener('change', saveSettings);
 launchAtStartupInput.addEventListener('change', saveSettings);
 notifyOnBlockInput.addEventListener('change', saveSettings);
 notifyOnUnblockInput.addEventListener('change', saveSettings);
@@ -826,6 +905,13 @@ window.blocker.getLogPath().then((logPath) => {
   if (logPathInput) logPathInput.value = logPath || '';
 });
 
+window.blocker.getDefaultsMeta().then(({ defaultsPath, note }) => {
+  if (defaultsPathInput) defaultsPathInput.value = defaultsPath || '';
+  if (defaultsPathHint && note) {
+    defaultsPathHint.innerHTML = `${escapeHtml(note)} Edit <code>config/app-defaults.json</code> and <code>config/ui.json</code> in the project folder.`;
+  }
+});
+
 scheduleEnabledInput.addEventListener('change', async () => {
   blockTimeInput.disabled = !scheduleEnabledInput.checked;
   unblockTimeInput.disabled = !scheduleEnabledInput.checked;
@@ -834,7 +920,30 @@ scheduleEnabledInput.addEventListener('change', async () => {
 blockTimeInput.addEventListener('change', saveScheduleSettings);
 unblockTimeInput.addEventListener('change', saveScheduleSettings);
 
-blockAllInput.addEventListener('change', saveBlockTargets);
+blockAllInput.addEventListener('change', async () => {
+  if (blockAllInput.checked) {
+    const accepted = confirm(
+      'Enable total blockout?\n\n'
+      + 'When blocks are applied, ALL outbound internet will be cut for every app on this computer.\n\n'
+      + 'This is much stronger than blocking individual websites or apps. '
+      + 'For YouTube, TikTok, games, etc., use Websites & DNS or Programs instead.\n\n'
+      + 'Enable total blockout anyway?',
+    );
+    if (!accepted) {
+      blockAllInput.checked = false;
+      if (blockoutEnabledHint) blockoutEnabledHint.hidden = true;
+      return;
+    }
+  }
+
+  if (blockoutEnabledHint) {
+    blockoutEnabledHint.hidden = !blockAllInput.checked;
+  }
+  if (overviewBlockoutWarning) {
+    overviewBlockoutWarning.hidden = !blockAllInput.checked;
+  }
+  await saveBlockTargets();
+});
 useDnsBlockingInput.addEventListener('change', async () => {
   dnsProviderSelect.disabled = !useDnsBlockingInput.checked;
   await saveBlockTargets();
@@ -843,19 +952,100 @@ dnsProviderSelect.addEventListener('change', saveBlockTargets);
 
 blockNowBtn.addEventListener('click', applyBlocksNow);
 blockoutNowBtn.addEventListener('click', async () => {
+  if (!confirm(
+    'Block ALL internet now?\n\n'
+    + 'Every application on this computer will lose outbound internet access immediately. '
+    + 'You will need to remove blocks (and enter your password if set) to get back online.\n\n'
+    + 'Make sure you are running as Administrator. Continue?',
+  )) {
+    return;
+  }
+
   blockAllInput.checked = true;
-  await applyBlocksNow();
+  if (blockoutEnabledHint) blockoutEnabledHint.hidden = false;
+  if (overviewBlockoutWarning) overviewBlockoutWarning.hidden = false;
+  try {
+    await saveBlockTargets();
+    await window.blocker.blockNow();
+  } catch (err) {
+    alert(err.message || 'Failed to block all internet.');
+  }
 });
 blockoutRestoreBtn.addEventListener('click', promptUnblock);
 unblockBtn.addEventListener('click', promptUnblock);
 
-addYoutubePackBtn.addEventListener('click', async () => {
+async function renderDomainPackButtons() {
+  if (!domainPacksRow) return;
+
   try {
-    const result = await window.blocker.applyDomainPack('youtube');
-    alert(`YouTube pack added. ${result.added} new domain(s); ${result.total} total.`);
+    const { packs, configPath, note } = await window.blocker.getDomainPacks();
+    if (domainPacksHint && configPath) {
+      domainPacksHint.innerHTML = `${escapeHtml(note || 'One-click domain packs for popular sites.')}`
+        + ` Lists are loaded from <code>${escapeHtml(configPath)}</code>.`;
+    }
+
+    if (!packs?.length) {
+      domainPacksRow.innerHTML = '<p class="hint">No domain packs configured.</p>';
+      return;
+    }
+
+    const applyNowDefault = applyBlocksOnPackAddInput?.checked !== false;
+
+    domainPacksRow.innerHTML = packs
+      .map((pack) => {
+        const action = applyNowDefault ? 'Block' : 'Add';
+        return (
+          `<button type="button" class="btn small ${applyNowDefault ? 'primary' : 'secondary'}" data-domain-pack="${escapeHtml(pack.id)}" title="${escapeHtml(pack.description)}">`
+          + `${action} ${escapeHtml(pack.name)} (${pack.domainCount})`
+          + '</button>'
+        );
+      })
+      .join('');
+
+    domainPacksRow.querySelectorAll('[data-domain-pack]').forEach((button) => {
+      button.addEventListener('click', async () => {
+        const packId = button.dataset.domainPack;
+        const pack = packs.find((entry) => entry.id === packId);
+        const packName = pack?.name || packId;
+        const applyNow = applyBlocksOnPackAddInput?.checked !== false;
+        const config = currentState?.config || {};
+
+        if (applyNow) {
+          const includesTotalBlockout = blockAllInput?.checked || config.blockAllInternet === true;
+          if (includesTotalBlockout && !confirmTotalBlockoutAction(`Block ${packName} now?`)) {
+            return;
+          }
+          if (!includesTotalBlockout && config.confirmBeforeBlock && !confirm(`Block ${packName} now?`)) {
+            return;
+          }
+        }
+
+        button.disabled = true;
+        try {
+          const result = await window.blocker.applyDomainPack(packId, { applyNow });
+          if (result.blocked) {
+            alert(`${packName} is now blocked (${result.added} new domain(s) added).`);
+          } else if (result.added > 0) {
+            alert(`${packName} added to your block list (${result.added} new domain(s)). Apply blocks from Overview when ready.`);
+          } else {
+            alert(`${packName} is already in your block list.`);
+          }
+        } catch (err) {
+          alert(err.message || `Failed to block ${packName}.`);
+        } finally {
+          button.disabled = false;
+        }
+      });
+    });
   } catch (err) {
-    alert(err.message || 'Failed to apply YouTube pack.');
+    domainPacksRow.innerHTML = `<p class="hint">${escapeHtml(err.message || 'Failed to load domain packs.')}</p>`;
   }
+}
+
+renderDomainPackButtons();
+applyBlocksOnPackAddInput?.addEventListener('change', () => {
+  saveSettings();
+  renderDomainPackButtons();
 });
 
 clearWebsitesBtn.addEventListener('click', async () => {

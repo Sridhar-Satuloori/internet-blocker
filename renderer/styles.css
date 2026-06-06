@@ -195,6 +195,115 @@ body {
   font-weight: 600;
 }
 
+.nav-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.nav-group-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 12px 4px;
+  border: none;
+  background: transparent;
+  color: #6e7c8a;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+  text-align: left;
+}
+
+.nav-group-toggle:hover {
+  color: #9eb0c2;
+}
+
+.nav-group-twisty {
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(-45deg);
+  transition: transform 0.15s;
+  flex-shrink: 0;
+}
+
+.nav-group.expanded .nav-group-twisty {
+  transform: rotate(45deg);
+}
+
+.nav-group-items {
+  display: none;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.nav-group.expanded .nav-group-items {
+  display: flex;
+}
+
+.nav-group:not(.expanded) .nav-group-twisty {
+  transform: rotate(-135deg);
+}
+
+.nav-group.has-active > .nav-group-toggle {
+  color: #79c0ff;
+}
+
+.shell.sidebar-collapsed .nav-group-toggle {
+  display: none;
+}
+
+.shell.sidebar-collapsed .nav-group.expanded .nav-group-items {
+  display: flex;
+  gap: 4px;
+}
+
+.callout {
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+  line-height: 1.45;
+  font-size: 0.88rem;
+}
+
+.callout strong {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 0.95rem;
+}
+
+.callout p {
+  margin: 0 0 8px;
+  color: #c9d4df;
+}
+
+.callout p:last-child {
+  margin-bottom: 0;
+}
+
+.callout-danger {
+  background: #3a1518;
+  border: 1px solid #8b2e2e;
+  color: #f0c8c8;
+}
+
+.callout-danger strong {
+  color: #ffb4b4;
+}
+
+#overview-blockout-warning {
+  margin-bottom: 12px;
+}
+
+.blockout-checkbox {
+  font-weight: 600;
+}
+
 .nav-divider {
   height: 1px;
   background: #2a3647;
@@ -526,6 +635,12 @@ body {
   font-size: 0.78rem;
   color: #6e7c8a;
   line-height: 1.4;
+}
+
+.hint code {
+  font-family: Consolas, 'Courier New', monospace;
+  font-size: 0.74rem;
+  color: #9eb0c2;
 }
 
 .note {

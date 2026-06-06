@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "note": "Default settings for new installs. Edit values here and restart the app. Per-user overrides are saved in config.json under app data.",
+  "defaults": {
+    "blockAfterMinutes": 30,
+    "autoStartTimer": false,
+    "minimizeToTray": false,
+    "dailySchedule": {
+      "enabled": false,
+      "blockTime": "22:00",
+      "unblockTime": "07:00"
+    },
+    "blockAllInternet": false,
+    "blockedApps": [],
+    "blockedWebsites": [],
+    "useDnsBlocking": false,
+    "dnsProvider": "cloudflare-family",
+    "sidebarCollapsed": false,
+    "showDetailsBar": false,
+    "applyBlocksOnPackAdd": true,
+    "confirmBeforeBlock": false,
+    "confirmBeforeUnblock": true,
+    "notifyOnBlock": true,
+    "notifyOnUnblock": true,
+    "launchAtStartup": false
+  }
+}

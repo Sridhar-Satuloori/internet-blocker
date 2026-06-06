@@ -1,7 +1,15 @@
 {
   "name": "internet-blocker",
   "version": "1.0.0-alpha",
-  "description": "Lightweight Electron app to block internet on a timer, schedule, or on demand — Windows and macOS",
+  "description": "Block internet, websites, apps, and games on Windows and macOS — focus timer, daily schedule, site packs (YouTube, TikTok), firewall and hosts blocking",
+  "homepage": "https://sridhar-satuloori.github.io/internet-blocker/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Sridhar-Satuloori/internet-blocker.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Sridhar-Satuloori/internet-blocker/issues"
+  },
   "main": "main.js",
   "scripts": {
     "start": "node scripts/start-electron.js",
@@ -12,7 +20,25 @@
     "build:mac": "node scripts/build-release.js darwin arm64",
     "build:mac-intel": "node scripts/build-release.js darwin x64"
   },
-  "keywords": ["electron", "internet-blocker", "focus", "productivity", "firewall", "windows", "macos"],
+  "keywords": [
+    "internet-blocker",
+    "website-blocker",
+    "block-youtube",
+    "block-tiktok",
+    "focus-app",
+    "productivity",
+    "parental-control",
+    "firewall",
+    "hosts-file",
+    "dns-blocking",
+    "game-blocker",
+    "app-blocker",
+    "focus-timer",
+    "distraction-blocker",
+    "electron",
+    "windows",
+    "macos"
+  ],
   "author": "Sridhar Satuloori (https://github.com/Sridhar-Satuloori)",
   "license": "MIT",
   "build": {

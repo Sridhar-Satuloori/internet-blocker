@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://sridhar-satuloori.github.io/internet-blocker/sitemap.xml

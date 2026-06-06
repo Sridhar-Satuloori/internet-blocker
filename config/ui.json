@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "note": "Sidebar layout and labels. Set expanded to false to collapse a group by default.",
+  "navGroups": [
+    {
+      "id": "automation",
+      "label": "Automation",
+      "expanded": true,
+      "views": ["timer", "schedule"]
+    },
+    {
+      "id": "programs",
+      "label": "Programs",
+      "expanded": true,
+      "views": ["apps", "games"]
+    }
+  ]
+}
