@@ -1,15 +1,15 @@
 {
   "name": "internet-blocker",
   "version": "1.0.0",
-  "description": "Lightweight Electron app that blocks internet on Windows after a configurable time",
+  "description": "Lightweight Electron app to block internet on a timer, schedule, or on demand — Windows and macOS",
   "main": "main.js",
   "scripts": {
     "start": "env -u ELECTRON_RUN_AS_NODE electron .",
     "dev": "env -u ELECTRON_RUN_AS_NODE electron . --enable-logging",
     "generate-icons": "node scripts/generate-icons.js"
   },
-  "keywords": ["electron", "internet-blocker", "focus", "windows"],
-  "author": "",
+  "keywords": ["electron", "internet-blocker", "focus", "productivity", "firewall", "windows", "macos"],
+  "author": "Sridhar Satuloori (https://github.com/Sridhar-Satuloori)",
   "license": "MIT",
   "build": {
     "appId": "com.internetblocker.app",

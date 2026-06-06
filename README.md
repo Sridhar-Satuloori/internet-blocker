@@ -1,104 +1,184 @@
 # Internet Blocker
 
-A lightweight Electron app for Windows that blocks outbound internet access after a focus timer, on a daily schedule, or both.
+A lightweight **Electron** app that helps you stay focused by blocking internet access on a timer, on a daily schedule, or on demand. Block everything, specific apps, websites, or games — with optional password protection and a built-in network speed diagnostic.
 
-## How it works
+Works on **Windows** and **macOS** (administrator / sudo required to apply blocks).
 
-1. **Focus timer** — set minutes until internet is blocked, then start the timer.
-2. **Daily schedule** — block and unblock at fixed times each day (overnight windows like 22:00 → 07:00 are supported).
-3. **Password protection** — optional password required for manual early unblock (scheduled unblocks still run automatically).
-4. **Block targets** — block all internet, specific apps, and/or websites.
-5. **System tray** — shield icon changes color: green (ready), amber (timer running), red (blocked).
+![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
 
-Blocking uses **Windows Firewall** (`netsh advfirewall`) for apps and full internet, and the **hosts file** for websites.
+---
+
+## Features
+
+| Feature | Description |
+|--------|-------------|
+| **Focus timer** | Block after N minutes — countdown in the tray |
+| **Daily schedule** | Auto block/unblock at set times (e.g. 22:00 → 07:00) |
+| **Total blockout** | Cut all outbound internet (strongest mode) |
+| **App blocking** | Block specific programs; browse or pick from running apps |
+| **Website blocking** | Hosts-file blocks + YouTube domain pack (~20 domains) |
+| **DNS filtering** | Family-safe DNS (Cloudflare, OpenDNS, AdGuard) while blocking |
+| **Game scanner** | Find installed games and block their network access (Windows) |
+| **Network Speed** | Download/upload test, link speed, bottleneck hints (Killer, VPN, etc.) |
+| **Password protection** | Optional password for manual unblock |
+| **Settings** | Tray behavior, startup, notifications, details bar, confirmations |
+| **System tray** | Green = ready, amber = timer, red = blocked |
+
+---
+
+## How blocking works
+
+### Windows
+- **Firewall** — `netsh advfirewall` for total blockout and per-app rules
+- **Hosts file** — `C:\Windows\System32\drivers\etc\hosts`
+- **DNS** — `netsh` to set family-safe DNS on active adapters (restored on unblock)
+
+### macOS
+- **Packet filter (pf)** — anchor rules for total blockout and per-app blocks
+- **Hosts file** — `/etc/hosts`
+- **DNS** — `networksetup` on active network services (restored on unblock)
+
+All blocked websites are written between `# InternetBlocker START` and `# InternetBlocker END` markers so they can be removed cleanly.
+
+---
 
 ## Requirements
 
-- **Windows 10/11** for blocking (UI runs on macOS/Linux for development)
-- **Administrator privileges** to create or remove firewall rules
+| | Windows | macOS |
+|---|---------|-------|
+| **OS** | Windows 10/11 | macOS 11+ |
+| **Privileges** | Run as Administrator | Run as Admin (sudo) |
+| **Node.js** | 18+ (for development) | 18+ |
 
-## Setup
+---
+
+## Quick start
 
 ```bash
-cd ~/src/internet-blocker
+git clone https://github.com/Sridhar-Satuloori/internet-blocker.git
+cd internet-blocker
 npm install
-npm run generate-icons   # optional if assets/ already present
 npm start
 ```
 
-On Windows, run as Administrator the first time, or click **Run as Administrator** in the UI.
+**Windows:** Right-click → Run as Administrator, or use **Run as Admin** in the sidebar.
 
-## Build for Windows
+**macOS:** Click **Run as Admin** in the sidebar (prompts for your password via sudo).
+
+> If `npm start` fails with `app.whenReady is not a function`, the project already uses `env -u ELECTRON_RUN_AS_NODE` in the start script to fix Cursor/IDE env conflicts.
+
+---
+
+## Usage
+
+1. **Overview** — see status, apply or remove all blocks
+2. **Total Blockout** — enable/disable global outbound block
+3. **Focus Timer** — set minutes, start countdown
+4. **Daily Schedule** — enable block window times
+5. **Apps** — add `.exe` (Windows) or `.app` (macOS); view running apps and block with one click
+6. **Websites & DNS** — add domains, YouTube pack, optional DNS filter
+7. **Games** — scan and block installed games (Windows)
+8. **Network Speed** — test download/upload, see NIC link speed and likely bottlenecks
+9. **Settings** — password, tray, startup, notifications, details bar
+
+### Recommended YouTube-only block
+
+1. Add **YouTube pack (~20 domains)**
+2. Enable **family-safe DNS**
+3. Uncheck **total blockout** if you only want YouTube blocked
+
+---
+
+## Network Speed
+
+- Measures **download** and **upload** via Cloudflare speed test endpoints
+- Shows **Wi-Fi name** or **LAN adapter** (on macOS, Location Services may be required to see the Wi-Fi SSID — use **Allow location access** in the app)
+- Detects likely limits: Killer Networking, VPN, 100 Mbps Ethernet link, etc.
+- Skips speed test while blocks are active
+
+---
+
+## Configuration
+
+Settings are stored in the Electron user data folder as `config.json`. Passwords are hashed with **scrypt** — only the hash is stored locally.
+
+| Setting | Default | Notes |
+|---------|---------|-------|
+| Block after (minutes) | 30 | Focus timer |
+| Block all internet | on | Total blockout |
+| Minimize to tray | on | Window close hides to tray |
+| Confirm before unblock | on | Password still applies when set |
+| Show details bar | on | Bottom panel shows where rules apply |
+
+---
+
+## Build
+
+### Windows executable
 
 ```bash
 npm install --save-dev @electron/packager
 npx electron-packager . InternetBlocker --platform=win32 --arch=x64 --out=dist
 ```
 
-Run `dist/InternetBlocker-win32-x64/InternetBlocker.exe` as Administrator.
+Run `dist/InternetBlocker-win32-x64/InternetBlocker.exe` **as Administrator**.
 
-## Configuration
+### macOS app bundle
 
-| Setting | Description |
-|---------|-------------|
-| Block after (minutes) | Focus timer delay (default: 30) |
-| Block all internet | Global outbound firewall block (default: on) |
-| Blocked apps | Per-app outbound firewall rules (`.exe` paths) |
-| Blocked websites | Domain blocks via hosts file + optional domain packs |
-| DNS filtering | Temporarily sets family-safe DNS on active adapters |
-| Installed games | Scan and block game `.exe` files (inbound + outbound) |
-| Daily schedule | Block/unblock at fixed times daily |
-| Unblock password | Protects manual unblock only |
-| Auto-start timer | Start focus timer on launch |
-| Minimize to tray | Keep running in tray when window is closed |
+```bash
+npm install --save-dev @electron/packager
+npx electron-packager . InternetBlocker --platform=darwin --arch=arm64 --out=dist
+```
 
-Settings are stored in the Electron user data folder. Passwords are hashed with scrypt — only the hash is saved.
+Run the `.app` with admin privileges to apply blocks.
 
-## Tray icon
+---
 
-Icons live in `assets/`:
+## Project structure
 
-- `tray-normal.png` — green shield (ready)
-- `tray-running.png` — amber shield (timer active)
-- `tray-blocked.png` — red shield (internet blocked)
+```
+internet-blocker/
+├── main.js              # Electron main process, IPC, tray
+├── preload.js           # Secure renderer bridge
+├── renderer/            # UI (HTML, CSS, JS)
+├── src/
+│   ├── firewall.js      # Platform dispatch (Windows / macOS)
+│   ├── firewall-windows.js
+│   ├── firewall-macos.js
+│   ├── hosts.js         # Hosts file read/write
+│   ├── dns.js           # DNS switch + restore
+│   ├── network-diagnostics.js
+│   ├── running-apps.js
+│   └── ...
+├── scripts/             # PowerShell helpers (Windows)
+└── assets/              # Tray icons
+```
 
-Regenerate with `npm run generate-icons` or `python3` using `scripts/generate-icons.js` as reference.
+---
 
 ## Resource usage
 
-- Plain HTML/CSS/JS renderer (no React/Vue)
-- System tray when minimized
-- Focus timer uses native `setTimeout` / `setInterval` only while active
-- Daily scheduler uses one `setTimeout` to the next block or unblock event
-- Firewall changes happen only at block/unblock time
+- Plain HTML/CSS/JS — no React or heavy frameworks
+- Timer uses `setTimeout` only while active
+- Scheduler uses one timeout to the next event
+- Firewall / hosts / DNS changes only at block or unblock time
+- Stays in the system tray when minimized
 
-## Where rules are applied (Windows)
-
-**Firewall (Outbound Rules in `wf.msc`):**
-- `InternetBlocker-BlockOutbound` — blocks all outbound traffic (when enabled)
-- `InternetBlocker-AllowSelf` — allows this app through
-- `InternetBlocker-App-{id}-tcp` / `-udp` — blocks a specific `.exe`
-
-**Hosts file (`C:\Windows\System32\drivers\etc\hosts`):**
-- Entries between `# InternetBlocker START` and `# InternetBlocker END`
-- **YouTube pack** adds ~20 related domains (video CDN, API, image hosts)
-
-**DNS (active network adapters):**
-- Temporarily switches DNS to a family-safe provider (Cloudflare, OpenDNS, or AdGuard)
-- Original DNS settings are backed up and restored on unblock
-
-**Games:**
-- Scans Steam libraries, uninstall registry, Epic/EA/Riot/Ubisoft folders
-- Blocked games get inbound **and** outbound firewall rules on their main `.exe`
-
-## Recommended YouTube setup
-
-1. Click **Add YouTube pack (~20 domains)**
-2. Enable **Also use family-safe DNS while blocking**
-3. Optionally uncheck **Block all outbound internet** if you only want YouTube blocked
-
-This combines hosts blocking for YouTube-specific domains with DNS filtering for broader coverage.
+---
 
 ## Security note
 
-This app modifies Windows Firewall rules and the system hosts file. Only run it if you trust the source. Manual unblock removes the rules and hosts entries it created. Scheduled unblocks do not require a password.
+This app modifies **firewall rules**, the **hosts file**, and **DNS settings**. Only run it if you trust the source. **Remove all blocks** from Overview (or the tray) to restore normal internet access. Scheduled unblocks run automatically and do not require a password.
+
+---
+
+## License
+
+MIT — see [LICENSE](LICENSE) if present, or MIT terms apply to this project.
+
+---
+
+## Author
+
+[Sridhar Satuloori](https://github.com/Sridhar-Satuloori)
