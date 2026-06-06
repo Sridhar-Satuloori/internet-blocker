@@ -1,12 +1,16 @@
 {
   "name": "internet-blocker",
-  "version": "1.0.0",
+  "version": "1.0.0-alpha",
   "description": "Lightweight Electron app to block internet on a timer, schedule, or on demand — Windows and macOS",
   "main": "main.js",
   "scripts": {
     "start": "env -u ELECTRON_RUN_AS_NODE electron .",
     "dev": "env -u ELECTRON_RUN_AS_NODE electron . --enable-logging",
-    "generate-icons": "node scripts/generate-icons.js"
+    "generate-icons": "node scripts/generate-icons.js",
+    "build": "node scripts/build-release.js",
+    "build:win": "node scripts/build-release.js win32 x64",
+    "build:mac": "node scripts/build-release.js darwin arm64",
+    "build:mac-intel": "node scripts/build-release.js darwin x64"
   },
   "keywords": ["electron", "internet-blocker", "focus", "productivity", "firewall", "windows", "macos"],
   "author": "Sridhar Satuloori (https://github.com/Sridhar-Satuloori)",
@@ -20,6 +24,7 @@
     }
   },
   "devDependencies": {
+    "@electron/packager": "^18.3.6",
     "electron": "^35.0.0"
   }
 }

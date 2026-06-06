@@ -6,6 +6,17 @@ Works on **Windows** and **macOS** (administrator / sudo required to apply block
 
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
+![Release](https://img.shields.io/github/v/release/Sridhar-Satuloori/internet-blocker?label=release&include_prereleases)
+
+**Downloads:** [GitHub Releases](https://github.com/Sridhar-Satuloori/internet-blocker/releases/latest) · [Project site (GitHub Pages)](https://sridhar-satuloori.github.io/internet-blocker/)
+
+| Platform | File |
+|----------|------|
+| Windows (x64) | `InternetBlocker-<version>-win-x64.zip` |
+| macOS (Apple Silicon) | `InternetBlocker-<version>-mac-arm64.zip` |
+| macOS (Intel) | `InternetBlocker-<version>-mac-x64.zip` |
+
+Extract the zip, then run **as Administrator** on Windows or with admin privileges on macOS.
 
 ---
 
@@ -115,23 +126,27 @@ Settings are stored in the Electron user data folder as `config.json`. Passwords
 
 ## Build
 
-### Windows executable
+Versioned zip archives are produced in `dist/`:
 
 ```bash
-npm install --save-dev @electron/packager
-npx electron-packager . InternetBlocker --platform=win32 --arch=x64 --out=dist
+npm install
+npm run build:win        # Windows x64  → InternetBlocker-<version>-win-x64.zip
+npm run build:mac        # macOS arm64  → InternetBlocker-<version>-mac-arm64.zip
+npm run build:mac-intel  # macOS x64    → InternetBlocker-<version>-mac-x64.zip
 ```
 
-Run `dist/InternetBlocker-win32-x64/InternetBlocker.exe` **as Administrator**.
+Run `InternetBlocker.exe` (Windows) or `InternetBlocker.app` (macOS) **with administrator privileges**.
 
-### macOS app bundle
+### Publish a release
+
+Push a version tag to build binaries on GitHub Actions and attach them to a release:
 
 ```bash
-npm install --save-dev @electron/packager
-npx electron-packager . InternetBlocker --platform=darwin --arch=arm64 --out=dist
+git tag v1.0.0-alpha
+git push origin v1.0.0-alpha
 ```
 
-Run the `.app` with admin privileges to apply blocks.
+The [Release workflow](.github/workflows/release.yml) uploads all three platform zips. The [GitHub Pages site](docs/) is deployed from `main` and lists the latest downloads automatically.
 
 ---
 

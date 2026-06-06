@@ -1,0 +1,237 @@
+:root {
+  --bg: #0f1419;
+  --surface: #1a2332;
+  --surface-2: #243044;
+  --text: #e8edf4;
+  --muted: #9aa8bc;
+  --accent: #3fb950;
+  --accent-2: #58a6ff;
+  --border: #2d3a4f;
+  --amber: #f5a623;
+  --red: #e5534b;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+}
+
+a {
+  color: var(--accent-2);
+}
+
+a:hover {
+  text-decoration: none;
+}
+
+header {
+  background: linear-gradient(135deg, #152238 0%, #0f1419 60%);
+  border-bottom: 1px solid var(--border);
+  padding: 3rem 1.5rem 2.5rem;
+}
+
+.header-inner,
+main {
+  max-width: 920px;
+  margin: 0 auto;
+}
+
+.badge-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.badge {
+  display: inline-block;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: var(--surface-2);
+  color: var(--muted);
+  border: 1px solid var(--border);
+}
+
+h1 {
+  margin: 0 0 0.75rem;
+  font-size: clamp(2rem, 5vw, 2.75rem);
+  letter-spacing: -0.02em;
+}
+
+.tagline {
+  margin: 0;
+  color: var(--muted);
+  font-size: 1.1rem;
+  max-width: 52ch;
+}
+
+.downloads {
+  margin: 2rem 0 0;
+  padding: 1.5rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.downloads h2 {
+  margin: 0 0 0.35rem;
+  font-size: 1.25rem;
+}
+
+.version-line {
+  margin: 0 0 1rem;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.download-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.75rem;
+}
+
+.download-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 1rem 1.1rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.15s, transform 0.15s;
+}
+
+.download-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.download-card strong {
+  font-size: 1rem;
+}
+
+.download-card span {
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.download-card .size {
+  color: var(--accent);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.download-note {
+  margin: 1rem 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.downloads-loading,
+.downloads-error {
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+main {
+  padding: 2rem 1.5rem 4rem;
+}
+
+.readme h2 {
+  margin-top: 2.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+  font-size: 1.4rem;
+}
+
+.readme h3 {
+  margin-top: 1.5rem;
+  font-size: 1.1rem;
+}
+
+.readme p,
+.readme li {
+  color: #d4dce8;
+}
+
+.readme table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+  font-size: 0.95rem;
+}
+
+.readme th,
+.readme td {
+  border: 1px solid var(--border);
+  padding: 0.55rem 0.75rem;
+  text-align: left;
+}
+
+.readme th {
+  background: var(--surface);
+}
+
+.readme pre {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1rem;
+  overflow-x: auto;
+  font-size: 0.88rem;
+}
+
+.readme code {
+  font-family: Consolas, 'Courier New', monospace;
+}
+
+.readme hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 2rem 0;
+}
+
+.readme blockquote {
+  margin: 1rem 0;
+  padding: 0.75rem 1rem;
+  border-left: 3px solid var(--amber);
+  background: rgba(245, 166, 35, 0.08);
+  color: var(--muted);
+}
+
+footer {
+  max-width: 920px;
+  margin: 0 auto;
+  padding: 0 1.5rem 3rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+footer a {
+  color: var(--accent-2);
+}
+
+@media (max-width: 600px) {
+  header,
+  main,
+  footer {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .readme table {
+    display: block;
+    overflow-x: auto;
+  }
+}

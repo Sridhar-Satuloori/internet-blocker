@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Internet Blocker — Downloads &amp; Documentation</title>
+  <meta name="description" content="Lightweight Electron app to block internet on a timer, schedule, or on demand — Windows and macOS.">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <div class="header-inner">
+      <div class="badge-row">
+        <span class="badge">Windows &amp; macOS</span>
+        <span class="badge">MIT License</span>
+        <span class="badge">Electron</span>
+      </div>
+      <h1>Internet Blocker</h1>
+      <p class="tagline">
+        A lightweight app that helps you stay focused by blocking internet access on a timer,
+        on a daily schedule, or on demand.
+      </p>
+
+      <section class="downloads" aria-labelledby="downloads-heading">
+        <h2 id="downloads-heading">Downloads</h2>
+        <p id="latest-version" class="version-line">Loading latest release…</p>
+        <p id="download-status" class="downloads-loading">Fetching release assets from GitHub…</p>
+        <div id="download-grid" class="download-grid"></div>
+        <p class="download-note">
+          Administrator privileges are required on Windows; macOS needs admin (sudo) to apply blocks.
+          See <a href="https://github.com/Sridhar-Satuloori/internet-blocker">the repository</a>
+          for source code and older releases.
+        </p>
+      </section>
+    </div>
+  </header>
+
+  <main class="readme">
+    <h2>Features</h2>
+    <table>
+      <thead>
+        <tr><th>Feature</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>Focus timer</strong></td><td>Block after N minutes — countdown in the tray</td></tr>
+        <tr><td><strong>Daily schedule</strong></td><td>Auto block/unblock at set times (e.g. 22:00 → 07:00)</td></tr>
+        <tr><td><strong>Total blockout</strong></td><td>Cut all outbound internet (strongest mode)</td></tr>
+        <tr><td><strong>App blocking</strong></td><td>Block specific programs; browse or pick from running apps</td></tr>
+        <tr><td><strong>Website blocking</strong></td><td>Hosts-file blocks + YouTube domain pack (~20 domains)</td></tr>
+        <tr><td><strong>DNS filtering</strong></td><td>Family-safe DNS (Cloudflare, OpenDNS, AdGuard) while blocking</td></tr>
+        <tr><td><strong>Game scanner</strong></td><td>Find installed games and block their network access (Windows)</td></tr>
+        <tr><td><strong>Network Speed</strong></td><td>Download/upload test, link speed, bottleneck hints (Killer, VPN, etc.)</td></tr>
+        <tr><td><strong>Password protection</strong></td><td>Optional password for manual unblock</td></tr>
+        <tr><td><strong>Settings</strong></td><td>Tray behavior, startup, notifications, details bar, confirmations</td></tr>
+        <tr><td><strong>System tray</strong></td><td>Green = ready, amber = timer, red = blocked</td></tr>
+      </tbody>
+    </table>
+
+    <h2>How blocking works</h2>
+    <h3>Windows</h3>
+    <ul>
+      <li><strong>Firewall</strong> — <code>netsh advfirewall</code> for total blockout and per-app rules</li>
+      <li><strong>Hosts file</strong> — <code>C:\Windows\System32\drivers\etc\hosts</code></li>
+      <li><strong>DNS</strong> — <code>netsh</code> to set family-safe DNS on active adapters (restored on unblock)</li>
+    </ul>
+    <h3>macOS</h3>
+    <ul>
+      <li><strong>Packet filter (pf)</strong> — anchor rules for total blockout and per-app blocks</li>
+      <li><strong>Hosts file</strong> — <code>/etc/hosts</code></li>
+      <li><strong>DNS</strong> — <code>networksetup</code> on active network services (restored on unblock)</li>
+    </ul>
+    <p>All blocked websites are written between <code># InternetBlocker START</code> and <code># InternetBlocker END</code> markers so they can be removed cleanly.</p>
+
+    <h2>Requirements</h2>
+    <table>
+      <thead>
+        <tr><th></th><th>Windows</th><th>macOS</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>OS</strong></td><td>Windows 10/11</td><td>macOS 11+</td></tr>
+        <tr><td><strong>Privileges</strong></td><td>Run as Administrator</td><td>Run as Admin (sudo)</td></tr>
+        <tr><td><strong>Node.js</strong></td><td>18+ (for development)</td><td>18+</td></tr>
+      </tbody>
+    </table>
+
+    <h2>Quick start (from source)</h2>
+    <pre><code>git clone https://github.com/Sridhar-Satuloori/internet-blocker.git
+cd internet-blocker
+npm install
+npm start</code></pre>
+    <p><strong>Windows:</strong> Right-click → Run as Administrator, or use <strong>Run as Admin</strong> in the sidebar.</p>
+    <p><strong>macOS:</strong> Click <strong>Run as Admin</strong> in the sidebar (prompts for your password via sudo).</p>
+    <blockquote>
+      If <code>npm start</code> fails with <code>app.whenReady is not a function</code>, the project uses
+      <code>env -u ELECTRON_RUN_AS_NODE</code> in the start script to fix Cursor/IDE env conflicts.
+    </blockquote>
+
+    <h2>Usage</h2>
+    <ol>
+      <li><strong>Overview</strong> — see status, apply or remove all blocks</li>
+      <li><strong>Total Blockout</strong> — enable/disable global outbound block</li>
+      <li><strong>Focus Timer</strong> — set minutes, start countdown</li>
+      <li><strong>Daily Schedule</strong> — enable block window times</li>
+      <li><strong>Apps</strong> — add <code>.exe</code> (Windows) or <code>.app</code> (macOS); view running apps and block with one click</li>
+      <li><strong>Websites &amp; DNS</strong> — add domains, YouTube pack, optional DNS filter</li>
+      <li><strong>Games</strong> — scan and block installed games (Windows)</li>
+      <li><strong>Network Speed</strong> — test download/upload, see NIC link speed and likely bottlenecks</li>
+      <li><strong>Settings</strong> — password, tray, startup, notifications, details bar</li>
+    </ol>
+
+    <h3>Recommended YouTube-only block</h3>
+    <ol>
+      <li>Add <strong>YouTube pack (~20 domains)</strong></li>
+      <li>Enable <strong>family-safe DNS</strong></li>
+      <li>Uncheck <strong>total blockout</strong> if you only want YouTube blocked</li>
+    </ol>
+
+    <h2>Network Speed</h2>
+    <ul>
+      <li>Measures <strong>download</strong> and <strong>upload</strong> via Cloudflare speed test endpoints</li>
+      <li>Shows <strong>Wi-Fi name</strong> or <strong>LAN adapter</strong> (on macOS, Location Services may be required to see the Wi-Fi SSID)</li>
+      <li>Detects likely limits: Killer Networking, VPN, 100 Mbps Ethernet link, etc.</li>
+      <li>Skips speed test while blocks are active</li>
+    </ul>
+
+    <h2>Configuration</h2>
+    <p>Settings are stored in the Electron user data folder as <code>config.json</code>. Passwords are hashed with <strong>scrypt</strong> — only the hash is stored locally.</p>
+    <table>
+      <thead>
+        <tr><th>Setting</th><th>Default</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Block after (minutes)</td><td>30</td><td>Focus timer</td></tr>
+        <tr><td>Block all internet</td><td>on</td><td>Total blockout</td></tr>
+        <tr><td>Minimize to tray</td><td>on</td><td>Window close hides to tray</td></tr>
+        <tr><td>Confirm before unblock</td><td>on</td><td>Password still applies when set</td></tr>
+        <tr><td>Show details bar</td><td>on</td><td>Bottom panel shows where rules apply</td></tr>
+      </tbody>
+    </table>
+
+    <h2>Build from source</h2>
+    <h3>Windows executable</h3>
+    <pre><code>npm install
+npm run build:win</code></pre>
+    <p>Output: <code>dist/InternetBlocker-&lt;version&gt;-win-x64.zip</code></p>
+
+    <h3>macOS app bundle</h3>
+    <pre><code>npm install
+npm run build:mac        # Apple Silicon
+npm run build:mac-intel  # Intel Mac</code></pre>
+    <p>Output: <code>dist/InternetBlocker-&lt;version&gt;-mac-arm64.zip</code> or <code>-mac-x64.zip</code></p>
+
+    <h2>Security note</h2>
+    <p>
+      This app modifies <strong>firewall rules</strong>, the <strong>hosts file</strong>, and <strong>DNS settings</strong>.
+      Only run it if you trust the source. <strong>Remove all blocks</strong> from Overview (or the tray) to restore normal internet access.
+      Scheduled unblocks run automatically and do not require a password.
+    </p>
+
+    <h2>License</h2>
+    <p>MIT — see the <a href="https://github.com/Sridhar-Satuloori/internet-blocker/blob/main/LICENSE">LICENSE</a> file in the repository.</p>
+  </main>
+
+  <footer>
+    <p>
+      <a href="https://github.com/Sridhar-Satuloori/internet-blocker">GitHub repository</a>
+      ·
+      <a href="https://github.com/Sridhar-Satuloori/internet-blocker/releases">All releases</a>
+      ·
+      Author: <a href="https://github.com/Sridhar-Satuloori">Sridhar Satuloori</a>
+    </p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
