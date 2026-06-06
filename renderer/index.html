@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'">
+  <title>Internet Blocker</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="shell" id="shell">
+    <nav class="sidebar" id="sidebar">
+      <div class="sidebar-top">
+        <div class="brand">
+          <div class="brand-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l8 4v6c0 5-3.5 9-8 10C7.5 21 4 17 4 12V6l8-4z"/></svg>
+          </div>
+          <div class="brand-text">
+            <div class="brand-title">Internet Blocker</div>
+            <div class="brand-sub">Focus &amp; control</div>
+          </div>
+        </div>
+        <button type="button" class="sidebar-toggle" id="sidebar-toggle" title="Collapse sidebar" aria-label="Collapse sidebar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+      </div>
+
+      <div class="nav-list">
+        <button type="button" class="nav-item active" data-view="overview" title="Overview">
+          <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></span>
+          <span class="nav-label">Overview</span>
+        </button>
+        <button type="button" class="nav-item" data-view="blockout" title="Total Blockout">
+          <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M5 5l14 14"/></svg></span>
+          <span class="nav-label">Total Blockout</span>
+        </button>
+        <button type="button" class="nav-item" data-view="timer" title="Focus Timer">
+          <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="13" r="8"/><path d="M12 9V13l3 2"/><path d="M9 2h6"/></svg></span>
+          <span class="nav-label">Focus Timer</span>
+        </button>
+        <button type="button" class="nav-item" data-view="schedule" title="Daily Schedule">
+          <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18"/></svg></span>
+          <span class="nav-label">Daily Schedule</span>
+        </button>
+        <button type="button" class="nav-item" data-view="apps" title="Apps">
+          <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M8 21h8"/></svg></span>
+          <span class="nav-label">Apps</span>
+        </button>
+        <button type="button" class="nav-item" data-view="websites" title="Websites &amp; DNS">
+          <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M2 12h20M12 2a15 15 0 010 20M12 2a15 15 0 000 20"/></svg></span>
+          <span class="nav-label">Websites &amp; DNS</span>
+        </button>
+        <button type="button" class="nav-item" data-view="games" title="Games">
+          <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 12h4M8 10v4M15 13h.01M18 11h.01"/><rect x="2" y="6" width="20" height="12" rx="4"/></svg></span>
+          <span class="nav-label">Games</span>
+        </button>
+        <button type="button" class="nav-item" data-view="speed" title="Network Speed">
+          <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20v-6M12 4v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M4 12h2M18 12h2"/><path d="M12 14a2 2 0 100-4 2 2 0 000 4z"/><path d="M12 2a10 10 0 0110 10"/></svg></span>
+          <span class="nav-label">Network Speed</span>
+        </button>
+        <div class="nav-divider"></div>
+        <button type="button" class="nav-item" data-view="settings" title="Settings">
+          <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg></span>
+          <span class="nav-label">Settings</span>
+        </button>
+      </div>
+
+      <div class="sidebar-footer">
+        <button type="button" class="btn ghost full admin-nav-btn" id="admin-btn" hidden title="Run as Administrator">
+          <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l7 4v5c0 4.5-2.8 8.4-7 9.8C7.8 20.4 5 16.5 5 12V7l7-4z"/></svg></span>
+          <span class="nav-label">Run as Admin</span>
+        </button>
+      </div>
+    </nav>
+
+    <div class="main-area">
+      <main class="content">
+        <!-- views unchanged below -->
+        <div class="content-scroll">
+          <section class="view active" id="view-overview">
+            <header class="view-header">
+              <h1>Overview</h1>
+              <p>Current block status and quick actions</p>
+            </header>
+            <div class="status-card hero-status">
+              <div class="status-dot" id="status-dot"></div>
+              <div class="status-copy">
+                <div class="status-label" id="status-label">Checking status…</div>
+                <div class="status-detail" id="status-detail"></div>
+              </div>
+            </div>
+            <div class="timer-display" id="timer-display" hidden>
+              <span class="timer-value" id="timer-value">00:00</span>
+              <span class="timer-caption">until blocks activate</span>
+            </div>
+            <div class="summary-grid" id="summary-grid"></div>
+            <div class="hero-actions">
+              <button type="button" class="btn danger large" id="block-now-btn">Apply all blocks now</button>
+              <button type="button" class="btn success large" id="unblock-btn" disabled>Remove all blocks</button>
+            </div>
+            <p class="note" id="platform-note"></p>
+          </section>
+
+          <section class="view" id="view-blockout">
+            <header class="view-header"><h1>Total Blockout</h1><p>Cut all outbound internet for the entire system</p></header>
+            <div class="panel">
+              <p class="panel-lead">Blocks every app's outbound traffic via the system firewall. This is the strongest mode.</p>
+              <label class="checkbox-row"><input type="checkbox" id="block-all" checked>Include total blockout when blocking activates</label>
+              <div class="actions">
+                <button type="button" class="btn danger" id="blockout-now-btn">Block all internet now</button>
+                <button type="button" class="btn success" id="blockout-restore-btn" disabled>Restore internet</button>
+              </div>
+            </div>
+          </section>
+
+          <section class="view" id="view-timer">
+            <header class="view-header"><h1>Focus Timer</h1><p>Apply your block list after a countdown</p></header>
+            <div class="panel">
+              <label for="minutes">Block after (minutes)</label>
+              <input type="number" id="minutes" min="1" max="1440" step="1" value="30">
+              <label class="checkbox-row"><input type="checkbox" id="auto-start">Start timer automatically on launch</label>
+              <div class="actions">
+                <button type="button" class="btn primary" id="start-btn">Start timer</button>
+                <button type="button" class="btn secondary" id="stop-btn" disabled>Stop timer</button>
+              </div>
+            </div>
+          </section>
+
+          <section class="view" id="view-schedule">
+            <header class="view-header"><h1>Daily Schedule</h1><p>Automatically block and restore on a daily window</p></header>
+            <div class="panel">
+              <label class="checkbox-row"><input type="checkbox" id="schedule-enabled">Enable daily block window</label>
+              <div class="time-row">
+                <div><label for="block-time">Block at</label><input type="time" id="block-time" value="22:00"></div>
+                <div><label for="unblock-time">Unblock at</label><input type="time" id="unblock-time" value="07:00"></div>
+              </div>
+              <p class="hint">Overnight schedules supported (e.g. 22:00 → 07:00).</p>
+            </div>
+          </section>
+
+          <section class="view" id="view-apps">
+            <header class="view-header"><h1>Apps</h1><p>Block specific programs from accessing the internet</p></header>
+            <div class="panel">
+              <div class="sub-header">
+                <span>Running apps</span>
+                <button type="button" class="btn small secondary" id="refresh-running-apps-btn">Refresh</button>
+              </div>
+              <p class="hint" id="running-apps-status">Processes with a known executable path.</p>
+              <ul class="target-list running-apps-list" id="running-apps-list"></ul>
+              <p class="hint empty-hint" id="running-apps-empty" hidden>No running apps found.</p>
+            </div>
+            <div class="panel">
+              <div class="sub-header"><span>Blocked apps</span><button type="button" class="btn small ghost" id="add-app-btn">Browse app</button></div>
+              <ul class="target-list" id="blocked-apps-list"></ul>
+              <p class="hint empty-hint" id="apps-empty">No apps added yet.</p>
+            </div>
+          </section>
+
+          <section class="view" id="view-websites">
+            <header class="view-header"><h1>Websites &amp; DNS</h1><p>Block domains via hosts file and optional family-safe DNS</p></header>
+            <div class="panel">
+              <div class="pack-row"><button type="button" class="btn small secondary" id="add-youtube-pack-btn">Add YouTube pack (~20 domains)</button></div>
+              <label class="checkbox-row"><input type="checkbox" id="use-dns-blocking">Use family-safe DNS while blocking</label>
+              <label for="dns-provider">DNS provider</label>
+              <select id="dns-provider" class="select-input"></select>
+              <div class="add-row"><input type="text" id="website-input" placeholder="e.g. youtube.com"><button type="button" class="btn small secondary" id="add-website-btn">Add</button></div>
+              <ul class="target-list" id="blocked-websites-list"></ul>
+              <p class="hint empty-hint" id="websites-empty">No websites added yet.</p>
+              <div class="actions"><button type="button" class="btn ghost" id="clear-websites-btn">Clear all websites</button></div>
+            </div>
+          </section>
+
+          <section class="view" id="view-games">
+            <header class="view-header"><h1>Games</h1><p>Scan installed games and block their network access</p></header>
+            <div class="panel">
+              <div class="sub-header"><span>Installed games</span><button type="button" class="btn small secondary" id="scan-games-btn">Scan computer</button></div>
+              <p class="hint" id="games-scan-status">Scan Steam, Epic, registry installs, and common game folders.</p>
+              <div class="game-toolbar">
+                <button type="button" class="btn small ghost" id="select-all-games-btn" disabled>Select all</button>
+                <button type="button" class="btn small ghost" id="clear-games-btn" disabled>Clear</button>
+                <button type="button" class="btn small primary" id="block-selected-games-btn" disabled>Add to block list</button>
+              </div>
+              <div class="game-list" id="game-list"></div>
+            </div>
+          </section>
+
+          <section class="view" id="view-speed">
+            <header class="view-header">
+              <h1>Network Speed</h1>
+              <p>Test download &amp; upload speed, check your link capacity, and find likely bottlenecks</p>
+            </header>
+
+            <div class="speed-network-banner" id="speed-network-banner">
+              <span class="speed-network-label">Testing on</span>
+              <span class="speed-network-name" id="speed-network-name">—</span>
+            </div>
+            <p class="hint speed-network-hint" id="speed-network-hint" hidden></p>
+            <div class="speed-location-actions" id="speed-location-actions" hidden>
+              <button type="button" class="btn small secondary" id="speed-location-btn">Allow location access</button>
+              <button type="button" class="btn small ghost" id="speed-location-settings-btn">Open Location Settings</button>
+            </div>
+
+            <div class="speed-metrics" id="speed-metrics">
+              <div class="speed-metric">
+                <div class="speed-metric-label">Download speed</div>
+                <div class="speed-metric-value" id="speed-download-value">—</div>
+              </div>
+              <div class="speed-metric">
+                <div class="speed-metric-label">Upload speed</div>
+                <div class="speed-metric-value" id="speed-upload-value">—</div>
+              </div>
+              <div class="speed-metric">
+                <div class="speed-metric-label">NIC link speed</div>
+                <div class="speed-metric-value" id="speed-link-value">—</div>
+              </div>
+              <div class="speed-metric highlight">
+                <div class="speed-metric-label">Max without software limits</div>
+                <div class="speed-metric-value" id="speed-max-value">—</div>
+                <div class="speed-metric-hint">Based on adapter link negotiation</div>
+              </div>
+            </div>
+
+            <div class="panel">
+              <div class="sub-header">
+                <span>Diagnostics</span>
+                <div class="speed-actions">
+                  <button type="button" class="btn small secondary" id="speed-refresh-btn">Refresh adapters</button>
+                  <button type="button" class="btn primary" id="speed-test-btn">Run speed test</button>
+                </div>
+              </div>
+              <div class="speed-progress" id="speed-progress" hidden>
+                <div class="speed-progress-bar"><div class="speed-progress-fill" id="speed-progress-fill"></div></div>
+                <p class="hint" id="speed-progress-text">Preparing…</p>
+              </div>
+              <p class="panel-lead" id="speed-summary">Run a test to measure download &amp; upload speed and detect likely limits (Killer, VPN, 100 Mbps link, etc.).</p>
+              <p class="hint" id="speed-limit-factor" hidden></p>
+            </div>
+
+            <div class="panel" id="speed-bottlenecks-panel" hidden>
+              <h3 class="settings-group-title">Likely bottlenecks</h3>
+              <ul class="diagnostic-list" id="speed-bottlenecks-list"></ul>
+            </div>
+
+            <div class="panel" id="speed-fixes-panel" hidden>
+              <h3 class="settings-group-title">Suggested fixes</h3>
+              <ul class="diagnostic-list fixes" id="speed-fixes-list"></ul>
+            </div>
+
+            <div class="panel">
+              <h3 class="settings-group-title">Active adapter</h3>
+              <div class="adapter-card" id="speed-adapter-card">
+                <p class="hint">Adapter details appear after refresh or speed test.</p>
+              </div>
+            </div>
+          </section>
+
+          <section class="view" id="view-settings">
+            <header class="view-header"><h1>Settings</h1><p>Appearance, behavior, password, and advanced options</p></header>
+
+            <div class="panel">
+              <h3 class="settings-group-title">Appearance</h3>
+              <label class="checkbox-row"><input type="checkbox" id="show-details-bar" checked>Show details bar at bottom</label>
+              <p class="hint">Displays where firewall rules, hosts entries, and DNS changes are applied.</p>
+            </div>
+
+            <div class="panel">
+              <h3 class="settings-group-title">App behavior</h3>
+              <label class="checkbox-row"><input type="checkbox" id="minimize-tray" checked>Minimize to system tray when closed</label>
+              <label class="checkbox-row"><input type="checkbox" id="launch-at-startup">Launch at login</label>
+              <label class="checkbox-row"><input type="checkbox" id="notify-on-block" checked>Notify when blocks are applied</label>
+              <label class="checkbox-row"><input type="checkbox" id="notify-on-unblock" checked>Notify when blocks are removed</label>
+            </div>
+
+            <div class="panel">
+              <h3 class="settings-group-title">Safety</h3>
+              <label class="checkbox-row"><input type="checkbox" id="confirm-before-block">Confirm before applying blocks</label>
+              <label class="checkbox-row"><input type="checkbox" id="confirm-before-unblock" checked>Confirm before removing blocks</label>
+              <p class="hint">Password protection (below) still applies when set, regardless of confirm setting.</p>
+            </div>
+
+            <div class="panel">
+              <h3 class="settings-group-title">Unblock password</h3>
+              <p class="hint" id="password-status">No password set — unblock is unrestricted.</p>
+              <label for="new-password">New password</label>
+              <input type="password" id="new-password" autocomplete="new-password" placeholder="At least 4 characters">
+              <label for="confirm-password">Confirm password</label>
+              <input type="password" id="confirm-password" autocomplete="new-password">
+              <label for="current-password" id="current-password-label" hidden>Current password</label>
+              <input type="password" id="current-password" autocomplete="current-password" hidden>
+              <div class="actions">
+                <button type="button" class="btn secondary" id="set-password-btn">Save password</button>
+                <button type="button" class="btn ghost" id="clear-password-btn" hidden>Remove password</button>
+              </div>
+            </div>
+
+            <div class="panel">
+              <h3 class="settings-group-title">Advanced</h3>
+              <label>Config file location</label>
+              <input type="text" id="config-path" readonly class="readonly-input">
+              <div class="actions">
+                <button type="button" class="btn ghost" id="open-config-folder-btn">Open config folder</button>
+              </div>
+            </div>
+          </section>
+        </div>
+      </main>
+
+      <footer class="details-bar" id="details-bar">
+        <div class="details-header">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7h.01"/></svg>
+          <span id="details-title">Where settings are applied</span>
+        </div>
+        <div class="details-body" id="details-body"></div>
+      </footer>
+    </div>
+  </div>
+
+  <dialog id="password-dialog" class="modal">
+    <form method="dialog" id="password-form">
+      <h3>Enter password to unblock</h3>
+      <input type="password" id="unblock-password" autocomplete="current-password" required>
+      <div class="actions">
+        <button type="button" class="btn ghost" id="cancel-unblock">Cancel</button>
+        <button type="submit" class="btn success">Remove all blocks</button>
+      </div>
+      <p class="error" id="unblock-error" hidden></p>
+    </form>
+  </dialog>
+
+  <script src="app.js"></script>
+</body>
+</html>
