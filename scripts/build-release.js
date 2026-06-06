@@ -23,6 +23,7 @@ const platformLabel = platform === 'win32' ? 'win' : 'mac';
 const zipName = `InternetBlocker-${version}-${platformLabel}-${arch}.zip`;
 const distDir = path.join(__dirname, '..', 'dist');
 const zipPath = path.join(distDir, zipName);
+const stageDir = path.join(distDir, '.stage');
 
 function zipFolder(sourceDir, targetZip) {
   fs.mkdirSync(path.dirname(targetZip), { recursive: true });
@@ -46,12 +47,15 @@ function zipFolder(sourceDir, targetZip) {
 async function main() {
   console.log(`Building Internet Blocker v${version} for ${platform}/${arch}...`);
 
+  fs.rmSync(stageDir, { recursive: true, force: true });
+  fs.mkdirSync(stageDir, { recursive: true });
+
   const appPaths = await packager({
     dir: path.join(__dirname, '..'),
     name: 'InternetBlocker',
     platform,
     arch,
-    out: distDir,
+    out: stageDir,
     overwrite: true,
     asar: true,
     prune: true,
@@ -70,6 +74,7 @@ async function main() {
   }
 
   zipFolder(appPaths[0], zipPath);
+  fs.rmSync(stageDir, { recursive: true, force: true });
   console.log(`Created ${zipPath}`);
 }
 

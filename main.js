@@ -12,12 +12,65 @@ const { scanInstalledGames } = require('./src/game-scanner');
 const { listRunningApps } = require('./src/running-apps');
 const { getApplyLocations } = require('./src/apply-locations');
 const { getNetworkSnapshot, runNetworkDiagnostics, requestMacLocationAccess } = require('./src/network-diagnostics');
+const logger = require('./src/logger');
+const { relaunchWindowsAsAdmin } = require('./src/windows-admin-relaunch');
+const {
+  setupSingleInstance,
+  exitDuplicateInstance,
+  isElevatedRelaunch,
+} = require('./src/single-instance');
 
 let mainWindow = null;
 let tray = null;
 let timer = null;
 let scheduler = null;
 let blocked = false;
+
+function focusMainWindow() {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  if (mainWindow.isMinimized()) mainWindow.restore();
+  mainWindow.show();
+  mainWindow.focus();
+}
+
+function reloadMainWindow() {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  const { webContents } = mainWindow;
+  if (webContents.isLoading()) {
+    webContents.once('did-finish-load', () => broadcastState());
+    return;
+  }
+  webContents.reloadIgnoringCache();
+  webContents.once('did-finish-load', () => broadcastState());
+}
+
+const singleInstance = setupSingleInstance(app, {
+  onElevatedReplace: (argv) => {
+    logger.info('Elevated relaunch detected — closing non-admin instance', { argv });
+  },
+  onFocusExisting: () => {
+    if (!app.isPackaged) {
+      logger.info('Dev restart requested — quitting so the new launch can take over');
+      app.isQuitting = true;
+      app.quit();
+      return;
+    }
+
+    logger.info('Second launch attempt — reloading and focusing existing window');
+    focusMainWindow();
+    reloadMainWindow();
+  },
+});
+
+if (!singleInstance.shouldRun) {
+  exitDuplicateInstance(app);
+}
+
+if (singleInstance.shouldRun && (singleInstance.gotLock || singleInstance.isElevatedRelaunch)) {
+  const { cleanupStaleAppProcesses } = require('./src/process-cleanup');
+  logger.initLogger({ appRoot: path.join(__dirname) });
+  cleanupStaleAppProcesses({ currentPid: process.pid, logger });
+}
 
 function showNotification(title, body) {
   if (Notification.isSupported()) {
@@ -240,8 +293,40 @@ function createWindow() {
 
   mainWindow.loadFile(path.join(__dirname, 'renderer', 'index.html'));
 
+  mainWindow.webContents.on('did-fail-load', (_event, errorCode, errorDescription, validatedURL) => {
+    logger.error('Renderer failed to load', { errorCode, errorDescription, validatedURL });
+  });
+
+  mainWindow.webContents.on('render-process-gone', (_event, details) => {
+    logger.warn('Renderer process gone', details);
+    if (mainWindow.isDestroyed()) return;
+    if (details.reason === 'clean-exit') return;
+    reloadMainWindow();
+  });
+
+  mainWindow.webContents.on('unresponsive', () => {
+    logger.warn('Renderer became unresponsive — reloading');
+    reloadMainWindow();
+  });
+
+  if (!app.isPackaged) {
+    mainWindow.webContents.on('console-message', (_event, level, message, line, sourceId) => {
+      if (level >= 2) {
+        logger.warn('Renderer console', { level, message, line, sourceId });
+      }
+    });
+  }
+
   mainWindow.once('ready-to-show', () => {
     mainWindow.show();
+    broadcastState();
+  });
+
+  mainWindow.on('focus', () => {
+    broadcastState();
+  });
+
+  mainWindow.on('show', () => {
     broadcastState();
   });
 
@@ -446,9 +531,27 @@ function setupIpc() {
     return shell.openPath(app.getPath('userData'));
   });
 
+  ipcMain.handle('open-log-folder', () => {
+    const logDir = logger.getLogDir();
+    logger.info('Opening log folder from UI', { logDir });
+    return shell.openPath(logDir);
+  });
+
+  ipcMain.handle('get-log-path', () => logger.getLogPath());
+
+  ipcMain.handle('read-log', (_event, options = {}) => {
+    const maxLines = Number(options.maxLines) > 0 ? Number(options.maxLines) : 200;
+    return logger.readLogTail(maxLines);
+  });
+
   ipcMain.handle('get-network-snapshot', async () => {
-    const snapshot = await getNetworkSnapshot({ requestLocation: true });
-    return { snapshot, blocked };
+    try {
+      const snapshot = await getNetworkSnapshot({ requestLocation: true });
+      return { snapshot, blocked };
+    } catch (err) {
+      logger.error('get-network-snapshot IPC failed', { error: err.message, stack: err.stack });
+      throw err;
+    }
   });
 
   ipcMain.handle('request-location-access', async () => {
@@ -469,12 +572,17 @@ function setupIpc() {
       }
     };
 
-    return runNetworkDiagnostics({
-      onProgress: emit,
-      skipSpeedTest: Boolean(options.skipSpeedTest),
-      internetBlocked: blocked,
-      appBlocked: blocked,
-    });
+    try {
+      return await runNetworkDiagnostics({
+        onProgress: emit,
+        skipSpeedTest: Boolean(options.skipSpeedTest),
+        internetBlocked: blocked,
+        appBlocked: blocked,
+      });
+    } catch (err) {
+      logger.error('run-network-diagnostics IPC failed', { error: err.message, stack: err.stack });
+      throw err;
+    }
   });
 
   ipcMain.handle('pick-blocked-app', async () => {
@@ -513,42 +621,94 @@ function setupIpc() {
     };
   });
 
-  ipcMain.handle('request-admin', () => {
+  ipcMain.handle('request-admin', async () => {
+    logger.info('request-admin invoked', {
+      platform: process.platform,
+      isPackaged: app.isPackaged,
+      execPath: process.execPath,
+      appPath: app.getAppPath(),
+      electronRunAsNode: process.env.ELECTRON_RUN_AS_NODE || null,
+    });
+
     if (!isWindows() && !isMac()) {
+      logger.warn('request-admin unsupported platform');
       return { relaunched: false, reason: 'unsupported-platform' };
+    }
+
+    const confirm = await dialog.showMessageBox(mainWindow, {
+      type: 'info',
+      title: 'Restart as Administrator',
+      message: 'Internet Blocker will close and restart with Administrator privileges.',
+      detail: isWindows()
+        ? 'Approve the Windows User Account Control prompt when it appears. If you click No, start the app again manually as Administrator.'
+        : 'Enter your password when macOS prompts you. If you cancel, start the app again manually.',
+      buttons: ['Continue', 'Cancel'],
+      defaultId: 0,
+      cancelId: 1,
+    });
+
+    if (confirm.response === 1) {
+      logger.info('request-admin cancelled by user');
+      return { relaunched: false, reason: 'cancelled' };
     }
 
     const { spawn } = require('child_process');
 
     if (isMac()) {
+      logger.info('request-admin relaunching on macOS');
+      const appDir = app.getAppPath().replace(/\\/g, '\\\\').replace(/"/g, '\\"');
       const escapedPath = process.execPath.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+      const launchCommand = app.isPackaged
+        ? `nohup \\"${escapedPath}\\" --elevated-relaunch >/dev/null 2>&1 &`
+        : `cd \\"${appDir}\\" && nohup \\"${escapedPath}\\" . --elevated-relaunch >/dev/null 2>&1 &`;
       spawn(
         'osascript',
-        [
-          '-e',
-          `do shell script "nohup \\"${escapedPath}\\" >/dev/null 2>&1 &" with administrator privileges`,
-        ],
+        ['-e', `do shell script "${launchCommand}" with administrator privileges`],
         { detached: true, stdio: 'ignore' }
       ).unref();
     } else {
-      spawn(
-        'powershell.exe',
-        [
-          '-NoProfile',
-          '-Command',
-          `Start-Process -FilePath '${process.execPath.replace(/'/g, "''")}' -Verb RunAs`,
-        ],
-        { detached: true, stdio: 'ignore' }
-      ).unref();
+      relaunchWindowsAsAdmin({ app, logger });
     }
 
-    app.isQuitting = true;
-    app.quit();
+    logger.info('request-admin scheduling quit after elevation handoff');
+    setTimeout(() => {
+      logger.info('request-admin quitting current process for relaunch');
+      app.isQuitting = true;
+      app.quit();
+    }, 750);
+
     return { relaunched: true };
   });
 }
 
 app.whenReady().then(async () => {
+  logger.initLogger({
+    userDataPath: app.isPackaged ? app.getPath('userData') : undefined,
+    appRoot: app.getAppPath(),
+    meta: {
+      source: 'main.js',
+      version: app.getVersion(),
+      isPackaged: app.isPackaged,
+      platform: process.platform,
+      execPath: process.execPath,
+      appPath: app.getAppPath(),
+      argv: process.argv,
+      electronRunAsNode: process.env.ELECTRON_RUN_AS_NODE || null,
+      singleInstanceLock: singleInstance.gotLock,
+      isElevatedRelaunch,
+    },
+  });
+
+  process.on('uncaughtException', (err) => {
+    logger.error('Uncaught exception', { error: err.message, stack: err.stack });
+  });
+
+  process.on('unhandledRejection', (reason) => {
+    const message = reason instanceof Error ? reason.message : String(reason);
+    const stack = reason instanceof Error ? reason.stack : undefined;
+    logger.error('Unhandled promise rejection', { error: message, stack });
+  });
+
   setupTimer();
   setupScheduler();
   setupIpc();
@@ -556,6 +716,9 @@ app.whenReady().then(async () => {
   createTray();
 
   blocked = isWindows() || isMac() ? await isBlocked(getBlockOptions()) : false;
+  const admin = isWindows() || isMac() ? await isAdmin() : false;
+
+  logger.info('Application ready', { blocked, isAdmin: admin });
 
   const config = loadConfig();
   if (config.autoStartTimer) {
@@ -574,6 +737,7 @@ app.on('window-all-closed', () => {
 });
 
 app.on('before-quit', async () => {
+  logger.info('Application quitting', { isQuitting: app.isQuitting });
   app.isQuitting = true;
   if (timer) timer.stop({ silent: true });
   if (scheduler) scheduler.stop({ silent: true });

@@ -67,8 +67,8 @@
 
       <div class="sidebar-footer">
         <button type="button" class="btn ghost full admin-nav-btn" id="admin-btn" hidden title="Run as Administrator">
-          <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l7 4v5c0 4.5-2.8 8.4-7 9.8C7.8 20.4 5 16.5 5 12V7l7-4z"/></svg></span>
-          <span class="nav-label">Run as Admin</span>
+          <span class="nav-icon" id="admin-btn-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l7 4v5c0 4.5-2.8 8.4-7 9.8C7.8 20.4 5 16.5 5 12V7l7-4z"/></svg></span>
+          <span class="nav-label" id="admin-btn-label">Run as Admin</span>
         </button>
       </div>
     </nav>
@@ -145,9 +145,19 @@
                 <span>Running apps</span>
                 <button type="button" class="btn small secondary" id="refresh-running-apps-btn">Refresh</button>
               </div>
+              <div class="collapsible-panel" id="running-apps-panel">
+                <button type="button" class="collapsible-toggle" id="running-apps-toggle" aria-expanded="false">
+                  <span class="collapsible-twisty" aria-hidden="true"></span>
+                  <span class="collapsible-summary" id="running-apps-summary">No running apps loaded yet.</span>
+                </button>
+                <div class="collapsible-body" id="running-apps-body" hidden>
+                  <input type="search" class="collapsible-search" id="running-apps-search" placeholder="Search running apps by name or path…" autocomplete="off">
+                  <ul class="target-list running-apps-list" id="running-apps-list"></ul>
+                  <p class="hint empty-hint" id="running-apps-empty" hidden>No running apps found.</p>
+                  <p class="hint empty-hint" id="running-apps-filter-empty" hidden>No apps match your search.</p>
+                </div>
+              </div>
               <p class="hint" id="running-apps-status">Processes with a known executable path.</p>
-              <ul class="target-list running-apps-list" id="running-apps-list"></ul>
-              <p class="hint empty-hint" id="running-apps-empty" hidden>No running apps found.</p>
             </div>
             <div class="panel">
               <div class="sub-header"><span>Blocked apps</span><button type="button" class="btn small ghost" id="add-app-btn">Browse app</button></div>
@@ -175,12 +185,22 @@
             <div class="panel">
               <div class="sub-header"><span>Installed games</span><button type="button" class="btn small secondary" id="scan-games-btn">Scan computer</button></div>
               <p class="hint" id="games-scan-status">Scan Steam, Epic, registry installs, and common game folders.</p>
-              <div class="game-toolbar">
-                <button type="button" class="btn small ghost" id="select-all-games-btn" disabled>Select all</button>
-                <button type="button" class="btn small ghost" id="clear-games-btn" disabled>Clear</button>
-                <button type="button" class="btn small primary" id="block-selected-games-btn" disabled>Add to block list</button>
+              <div class="collapsible-panel" id="games-panel">
+                <button type="button" class="collapsible-toggle" id="games-toggle" aria-expanded="false">
+                  <span class="collapsible-twisty" aria-hidden="true"></span>
+                  <span class="collapsible-summary" id="games-summary">No games scanned yet.</span>
+                </button>
+                <div class="collapsible-body" id="games-body" hidden>
+                  <input type="search" class="collapsible-search" id="games-search" placeholder="Search games by name, path, or source…" autocomplete="off">
+                  <div class="game-toolbar">
+                    <button type="button" class="btn small ghost" id="select-all-games-btn" disabled>Select all</button>
+                    <button type="button" class="btn small ghost" id="clear-games-btn" disabled>Clear</button>
+                    <button type="button" class="btn small primary" id="block-selected-games-btn" disabled>Add to block list</button>
+                  </div>
+                  <div class="game-list" id="game-list"></div>
+                  <p class="hint empty-hint" id="games-filter-empty" hidden>No games match your search.</p>
+                </div>
               </div>
-              <div class="game-list" id="game-list"></div>
             </div>
           </section>
 
@@ -297,8 +317,12 @@
               <h3 class="settings-group-title">Advanced</h3>
               <label>Config file location</label>
               <input type="text" id="config-path" readonly class="readonly-input">
+              <label>Debug log file</label>
+              <input type="text" id="log-path" readonly class="readonly-input">
               <div class="actions">
                 <button type="button" class="btn ghost" id="open-config-folder-btn">Open config folder</button>
+                <button type="button" class="btn secondary" id="view-logs-btn">View logs</button>
+                <button type="button" class="btn ghost" id="open-log-folder-btn">Open log folder</button>
               </div>
             </div>
           </section>
@@ -314,6 +338,17 @@
       </footer>
     </div>
   </div>
+
+  <dialog id="log-dialog" class="modal log-modal">
+    <h3>Debug logs</h3>
+    <p class="hint log-modal-path" id="log-dialog-path"></p>
+    <pre class="log-viewer" id="log-viewer">Loading…</pre>
+    <div class="actions">
+      <button type="button" class="btn ghost" id="close-log-dialog">Close</button>
+      <button type="button" class="btn secondary" id="refresh-log-dialog">Refresh</button>
+      <button type="button" class="btn ghost" id="open-log-folder-dialog">Open log folder</button>
+    </div>
+  </dialog>
 
   <dialog id="password-dialog" class="modal">
     <form method="dialog" id="password-form">

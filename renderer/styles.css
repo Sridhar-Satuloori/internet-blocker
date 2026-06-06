@@ -169,9 +169,24 @@ body {
 }
 
 .nav-item:hover,
-.admin-nav-btn:hover {
+.admin-nav-btn:hover:not(:disabled) {
   background: #1a2332;
   color: #e7ecf3;
+}
+
+.admin-nav-btn.is-elevated {
+  background: #3a2a10;
+  color: #f5c84c;
+  border: 1px solid #8a6b1f;
+  cursor: default;
+}
+
+.admin-nav-btn.is-elevated .nav-icon {
+  color: #f5a623;
+}
+
+.admin-nav-btn:disabled {
+  opacity: 1;
 }
 
 .nav-item.active {
@@ -628,6 +643,78 @@ body {
   flex-wrap: wrap;
 }
 
+.collapsible-panel {
+  border: 1px solid #2a3647;
+  border-radius: 8px;
+  background: #0f1419;
+  overflow: hidden;
+}
+
+.collapsible-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 12px 14px;
+  border: none;
+  background: #1a2332;
+  color: #e7ecf3;
+  font-size: 0.88rem;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.collapsible-toggle:hover {
+  background: #243044;
+}
+
+.collapsible-twisty {
+  width: 10px;
+  height: 10px;
+  flex-shrink: 0;
+  border-right: 2px solid #8b98a5;
+  border-bottom: 2px solid #8b98a5;
+  transform: rotate(-45deg);
+  transition: transform 0.15s ease;
+  margin-top: -2px;
+}
+
+.collapsible-toggle.is-expanded .collapsible-twisty {
+  transform: rotate(45deg);
+  margin-top: 2px;
+}
+
+.collapsible-summary {
+  flex: 1;
+  min-width: 0;
+}
+
+.collapsible-body {
+  padding: 10px 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.collapsible-body[hidden] {
+  display: none !important;
+}
+
+.collapsible-search {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid #2a3647;
+  background: #0f1419;
+  color: #e7ecf3;
+  font-size: 0.88rem;
+}
+
+.collapsible-search::placeholder {
+  color: #6e7c8a;
+}
+
 .game-toolbar {
   display: flex;
   gap: 8px;
@@ -692,6 +779,32 @@ body {
   background: #1a2332;
   color: #e7ecf3;
   max-width: 360px;
+}
+
+.log-modal {
+  width: min(760px, 92vw);
+  max-width: min(760px, 92vw);
+}
+
+.log-modal-path {
+  margin: 0 0 10px;
+  word-break: break-all;
+}
+
+.log-viewer {
+  margin: 0 0 14px;
+  padding: 12px;
+  max-height: 50vh;
+  overflow: auto;
+  border: 1px solid #2a3647;
+  border-radius: 8px;
+  background: #0f1419;
+  color: #c5d0dc;
+  font-family: Consolas, 'Courier New', monospace;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .modal::backdrop {

@@ -3,8 +3,19 @@ const os = require('os');
 const path = require('path');
 const { execFile } = require('child_process');
 const { promisify } = require('util');
+const logger = require('./logger');
 
 const execFileAsync = promisify(execFile);
+
+function logDiagnosticsError(scope, err, extra = {}) {
+  logger.error(scope, {
+    error: err.message,
+    stderr: err.stderr?.trim?.() || err.stderr || undefined,
+    stdout: err.stdout?.trim?.()?.slice(0, 1000) || undefined,
+    code: err.code,
+    ...extra,
+  });
+}
 const WIN_SCRIPT = path.join(__dirname, '..', 'scripts', 'network-info.ps1');
 const SPEED_TEST_BYTES = 20 * 1024 * 1024;
 const UPLOAD_TEST_BYTES = 10 * 1024 * 1024;
@@ -91,18 +102,35 @@ function parseLinkSpeedMbps(text) {
 }
 
 async function getWindowsSnapshot() {
-  const { stdout } = await execFileAsync(
-    'powershell.exe',
-    ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', WIN_SCRIPT],
-    { windowsHide: true, maxBuffer: 4 * 1024 * 1024 }
-  );
+  logger.info('Running Windows network snapshot script', { script: WIN_SCRIPT });
 
-  const trimmed = stdout.trim();
-  if (!trimmed) {
-    return { platform: 'win32', primaryAdapter: null, adapters: [], limiters: [], qosNotes: [] };
+  try {
+    const { stdout, stderr } = await execFileAsync(
+      'powershell.exe',
+      ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', WIN_SCRIPT],
+      { windowsHide: true, maxBuffer: 4 * 1024 * 1024 }
+    );
+
+    if (stderr?.trim()) {
+      logger.warn('network-info.ps1 stderr', { stderr: stderr.trim() });
+    }
+
+    const trimmed = stdout.trim();
+    if (!trimmed) {
+      logger.warn('Windows network snapshot returned empty output');
+      return { platform: 'win32', primaryAdapter: null, adapters: [], limiters: [], qosNotes: [] };
+    }
+
+    const snapshot = JSON.parse(trimmed);
+    logger.info('Windows network snapshot complete', {
+      adapterCount: snapshot.adapters?.length ?? 0,
+      primaryAdapter: snapshot.primaryAdapter?.name || null,
+    });
+    return snapshot;
+  } catch (err) {
+    logDiagnosticsError('getWindowsSnapshot failed', err, { script: WIN_SCRIPT });
+    throw new Error(`Network adapter scan failed: ${err.message}`);
   }
-
-  return JSON.parse(trimmed);
 }
 
 async function findMacWifiDevice() {
@@ -381,19 +409,24 @@ async function getMacSnapshot(options = {}) {
 }
 
 async function getNetworkSnapshot(options = {}) {
-  if (process.platform === 'win32') {
-    return getWindowsSnapshot();
+  try {
+    if (process.platform === 'win32') {
+      return await getWindowsSnapshot();
+    }
+    if (process.platform === 'darwin') {
+      return await getMacSnapshot(options);
+    }
+    return {
+      platform: process.platform,
+      primaryAdapter: null,
+      adapters: [],
+      limiters: [],
+      qosNotes: ['Network diagnostics are optimized for Windows and macOS.'],
+    };
+  } catch (err) {
+    logDiagnosticsError('getNetworkSnapshot failed', err, { platform: process.platform });
+    throw err;
   }
-  if (process.platform === 'darwin') {
-    return getMacSnapshot(options);
-  }
-  return {
-    platform: process.platform,
-    primaryAdapter: null,
-    adapters: [],
-    limiters: [],
-    qosNotes: ['Network diagnostics are optimized for Windows and macOS.'],
-  };
 }
 
 function measureDownload(bytes, onProgress) {
@@ -527,6 +560,12 @@ function measureUpload(bytes, onProgress) {
 }
 
 async function runSpeedTest(onProgress) {
+  logger.info('Starting Cloudflare speed test', {
+    server: SPEED_TEST_URL,
+    downloadBytes: SPEED_TEST_BYTES,
+    uploadBytes: UPLOAD_TEST_BYTES,
+  });
+
   const downloadAttempts = [];
   for (let i = 0; i < 2; i += 1) {
     const basePercent = 15 + i * 20;
@@ -588,7 +627,7 @@ async function runSpeedTest(onProgress) {
   const bestDownload = downloadAttempts.reduce((a, b) => (b.downloadMbps > a.downloadMbps ? b : a));
   const bestUpload = uploadAttempts.reduce((a, b) => (b.uploadMbps > a.uploadMbps ? b : a));
 
-  return {
+  const result = {
     downloadMbps: bestDownload.downloadMbps,
     uploadMbps: bestUpload.uploadMbps,
     bytes: bestDownload.bytes,
@@ -599,6 +638,13 @@ async function runSpeedTest(onProgress) {
     uploadAttempts: uploadAttempts.length,
     server: SPEED_TEST_URL,
   };
+
+  logger.info('Speed test complete', {
+    downloadMbps: result.downloadMbps,
+    uploadMbps: result.uploadMbps,
+  });
+
+  return result;
 }
 
 function formatMbps(value) {
@@ -742,44 +788,67 @@ function analyzeDiagnostics({ snapshot, speedTest, internetBlocked, appBlocked }
 async function runNetworkDiagnostics(options = {}) {
   const { onProgress, skipSpeedTest = false, internetBlocked = false, appBlocked = false } = options;
 
-  if (onProgress) {
-    onProgress({ phase: 'snapshot', percent: 5, message: 'Reading network adapters…' });
-  }
-  const snapshot = await getNetworkSnapshot({ requestLocation: true });
-
-  if (onProgress) {
-    onProgress({ phase: 'limiters', percent: 25, message: 'Scanning for bandwidth limiters…' });
-  }
-
-  let speedTest = null;
-  if (!skipSpeedTest && !internetBlocked && !appBlocked) {
-    speedTest = await runSpeedTest(onProgress);
-  } else if (internetBlocked || appBlocked) {
-    if (onProgress) {
-      onProgress({
-        phase: 'speed-test',
-        percent: 100,
-        message: 'Skipped speed test — remove active blocks first.',
-      });
-    }
-  }
-
-  if (onProgress) {
-    onProgress({ phase: 'analysis', percent: 95, message: 'Analyzing results…' });
-  }
-
-  const analysis = analyzeDiagnostics({
-    snapshot,
-    speedTest,
+  logger.info('runNetworkDiagnostics started', {
+    skipSpeedTest,
     internetBlocked,
     appBlocked,
   });
 
-  if (onProgress) {
-    onProgress({ phase: 'done', percent: 100, message: 'Complete' });
-  }
+  try {
+    if (onProgress) {
+      onProgress({ phase: 'snapshot', percent: 5, message: 'Reading network adapters…' });
+    }
+    const snapshot = await getNetworkSnapshot({ requestLocation: true });
 
-  return { snapshot, speedTest, analysis, testedAt: new Date().toISOString() };
+    if (onProgress) {
+      onProgress({ phase: 'limiters', percent: 25, message: 'Scanning for bandwidth limiters…' });
+    }
+
+    let speedTest = null;
+    if (!skipSpeedTest && !internetBlocked && !appBlocked) {
+      try {
+        speedTest = await runSpeedTest(onProgress);
+      } catch (err) {
+        logDiagnosticsError('runSpeedTest failed', err);
+        throw new Error(`Speed test failed: ${err.message}`);
+      }
+    } else if (internetBlocked || appBlocked) {
+      logger.info('Speed test skipped because blocks are active');
+      if (onProgress) {
+        onProgress({
+          phase: 'speed-test',
+          percent: 100,
+          message: 'Skipped speed test - remove active blocks first.',
+        });
+      }
+    }
+
+    if (onProgress) {
+      onProgress({ phase: 'analysis', percent: 95, message: 'Analyzing results…' });
+    }
+
+    const analysis = analyzeDiagnostics({
+      snapshot,
+      speedTest,
+      internetBlocked,
+      appBlocked,
+    });
+
+    if (onProgress) {
+      onProgress({ phase: 'done', percent: 100, message: 'Complete' });
+    }
+
+    logger.info('runNetworkDiagnostics complete', {
+      downloadMbps: speedTest?.downloadMbps ?? null,
+      uploadMbps: speedTest?.uploadMbps ?? null,
+      limitingFactor: analysis.limitingFactor,
+    });
+
+    return { snapshot, speedTest, analysis, testedAt: new Date().toISOString() };
+  } catch (err) {
+    logDiagnosticsError('runNetworkDiagnostics failed', err);
+    throw err;
+  }
 }
 
 module.exports = {

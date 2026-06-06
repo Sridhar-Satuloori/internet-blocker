@@ -103,7 +103,7 @@ if ($primary) {
     if (-not $primary.networkName) {
       $primary.connectionType = 'wifi'
       $primary.networkName = $primary.name
-      $primary.networkLabel = "Wi-Fi ($($primary.name)) — not connected"
+      $primary.networkLabel = "Wi-Fi ($($primary.name)) - not connected"
     }
   } else {
     $primary.connectionType = 'ethernet'

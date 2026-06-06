@@ -22,6 +22,11 @@ const blockedAppsList = document.getElementById('blocked-apps-list');
 const runningAppsList = document.getElementById('running-apps-list');
 const runningAppsStatus = document.getElementById('running-apps-status');
 const runningAppsEmpty = document.getElementById('running-apps-empty');
+const runningAppsFilterEmpty = document.getElementById('running-apps-filter-empty');
+const runningAppsToggle = document.getElementById('running-apps-toggle');
+const runningAppsBody = document.getElementById('running-apps-body');
+const runningAppsSummary = document.getElementById('running-apps-summary');
+const runningAppsSearch = document.getElementById('running-apps-search');
 const refreshRunningAppsBtn = document.getElementById('refresh-running-apps-btn');
 const blockedWebsitesList = document.getElementById('blocked-websites-list');
 const appsEmptyHint = document.getElementById('apps-empty');
@@ -32,6 +37,11 @@ const dnsProviderSelect = document.getElementById('dns-provider');
 const scanGamesBtn = document.getElementById('scan-games-btn');
 const gamesScanStatus = document.getElementById('games-scan-status');
 const gameList = document.getElementById('game-list');
+const gamesToggle = document.getElementById('games-toggle');
+const gamesBody = document.getElementById('games-body');
+const gamesSummary = document.getElementById('games-summary');
+const gamesSearch = document.getElementById('games-search');
+const gamesFilterEmpty = document.getElementById('games-filter-empty');
 const selectAllGamesBtn = document.getElementById('select-all-games-btn');
 const clearGamesBtn = document.getElementById('clear-games-btn');
 const blockSelectedGamesBtn = document.getElementById('block-selected-games-btn');
@@ -42,6 +52,11 @@ const unblockBtn = document.getElementById('unblock-btn');
 const blockoutNowBtn = document.getElementById('blockout-now-btn');
 const blockoutRestoreBtn = document.getElementById('blockout-restore-btn');
 const adminBtn = document.getElementById('admin-btn');
+const adminBtnIcon = document.getElementById('admin-btn-icon');
+const adminBtnLabel = document.getElementById('admin-btn-label');
+
+const ADMIN_ICON_REQUEST = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l7 4v5c0 4.5-2.8 8.4-7 9.8C7.8 20.4 5 16.5 5 12V7l7-4z"/></svg>';
+const ADMIN_ICON_ELEVATED = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l7 4v5c0 4.5-2.8 8.4-7 9.8C7.8 20.4 5 16.5 5 12V7l7-4z"/><path d="M12 11v2"/><circle cx="12" cy="16" r="1" fill="currentColor" stroke="none"/></svg>';
 const statusDot = document.getElementById('status-dot');
 const statusLabel = document.getElementById('status-label');
 const statusDetail = document.getElementById('status-detail');
@@ -68,7 +83,16 @@ const notifyOnUnblockInput = document.getElementById('notify-on-unblock');
 const confirmBeforeBlockInput = document.getElementById('confirm-before-block');
 const confirmBeforeUnblockInput = document.getElementById('confirm-before-unblock');
 const configPathInput = document.getElementById('config-path');
+const logPathInput = document.getElementById('log-path');
 const openConfigFolderBtn = document.getElementById('open-config-folder-btn');
+const openLogFolderBtn = document.getElementById('open-log-folder-btn');
+const viewLogsBtn = document.getElementById('view-logs-btn');
+const logDialog = document.getElementById('log-dialog');
+const logDialogPath = document.getElementById('log-dialog-path');
+const logViewer = document.getElementById('log-viewer');
+const closeLogDialogBtn = document.getElementById('close-log-dialog');
+const refreshLogDialogBtn = document.getElementById('refresh-log-dialog');
+const openLogFolderDialogBtn = document.getElementById('open-log-folder-dialog');
 const speedDownloadValue = document.getElementById('speed-download-value');
 const speedUploadValue = document.getElementById('speed-upload-value');
 const speedLinkValue = document.getElementById('speed-link-value');
@@ -97,6 +121,10 @@ let runningApps = [];
 let blockedWebsites = [];
 let scannedGames = [];
 let selectedGameIds = new Set();
+let runningAppsExpanded = false;
+let runningAppsSearchQuery = '';
+let gamesListExpanded = false;
+let gamesSearchQuery = '';
 let dnsProvidersLoaded = false;
 let currentState = null;
 let activeView = 'overview';
@@ -272,12 +300,48 @@ function buildBlockedDetail(config) {
   return parts.length ? `Active: ${parts.join(', ')}` : 'Blocks are active.';
 }
 
+function updateAdminUi({ blockingSupported, isAdmin, isMac }) {
+  if (!blockingSupported) {
+    adminBtn.hidden = true;
+    adminBtn.classList.remove('is-elevated');
+    adminBtn.disabled = false;
+    return;
+  }
+
+  adminBtn.hidden = false;
+
+  if (isAdmin) {
+    adminBtn.classList.add('is-elevated');
+    adminBtn.disabled = true;
+    adminBtn.title = 'Running with Administrator privileges';
+    adminBtnLabel.textContent = 'Running as Admin';
+    adminBtnIcon.innerHTML = ADMIN_ICON_ELEVATED;
+    platformNote.textContent = 'Running as Administrator — blocks can be applied and removed.';
+    return;
+  }
+
+  adminBtn.classList.remove('is-elevated');
+  adminBtn.disabled = false;
+  adminBtn.title = 'Run as Administrator';
+  adminBtnLabel.textContent = 'Run as Admin';
+  adminBtnIcon.innerHTML = ADMIN_ICON_REQUEST;
+  platformNote.textContent = isMac
+    ? 'Administrator privileges are required. Use Run as Admin in the sidebar (macOS will prompt for your password).'
+    : 'Administrator privileges are required to apply or remove blocks. Use the button in the sidebar.';
+}
+
 function renderSummaryGrid(state) {
-  const { config, timer, schedule, blocked } = state;
+  const { config, timer, schedule, blocked, isAdmin, blockingSupported } = state;
   const gameCount = (config.blockedApps || []).filter((a) => a.type === 'game').length;
   const appCount = (config.blockedApps || []).filter((a) => a.type !== 'game').length;
 
   const items = [
+    {
+      title: 'Privileges',
+      value: !blockingSupported ? 'N/A' : isAdmin ? 'Administrator' : 'Standard user',
+      state: isAdmin ? 'Ready to block' : 'Elevation required',
+      active: Boolean(isAdmin),
+    },
     {
       title: 'Total Blockout',
       value: config.blockAllInternet !== false ? 'Enabled in config' : 'Selective only',
@@ -331,10 +395,83 @@ function isAppBlocked(appPath) {
   return blockedApps.some((app) => app.path.toLowerCase() === appPath.toLowerCase());
 }
 
+function matchesSearchQuery(item, query, fields) {
+  const trimmed = query.trim().toLowerCase();
+  if (!trimmed) return true;
+  return fields.some((field) => String(item[field] || '').toLowerCase().includes(trimmed));
+}
+
+function setCollapsibleExpanded(toggle, body, expanded) {
+  if (!toggle || !body) return;
+  toggle.setAttribute('aria-expanded', String(expanded));
+  toggle.classList.toggle('is-expanded', expanded);
+  body.hidden = !expanded;
+}
+
+function getFilteredRunningApps() {
+  return runningApps.filter((app) => matchesSearchQuery(app, runningAppsSearchQuery, ['name', 'path']));
+}
+
+function getFilteredGames() {
+  return scannedGames.filter((game) => matchesSearchQuery(game, gamesSearchQuery, ['name', 'path', 'source']));
+}
+
+function buildRunningAppsSummary() {
+  const total = runningApps.length;
+  if (!total) return 'No running apps found';
+
+  const blockedCount = runningApps.filter((app) => isAppBlocked(app.path)).length;
+  const blockedLabel = blockedCount ? `, ${blockedCount} already blocked` : '';
+  const searchLabel = runningAppsSearchQuery.trim()
+    ? ` · showing ${getFilteredRunningApps().length} match(es)`
+    : '';
+
+  return `${total} running app${total === 1 ? '' : 's'}${blockedLabel}${searchLabel}`;
+}
+
+function buildGamesSummary() {
+  const total = scannedGames.length;
+  if (!total) return 'No games scanned yet';
+
+  const blockedCount = scannedGames.filter((game) => isGameBlocked(game.id)).length;
+  const selectedCount = selectedGameIds.size;
+  const parts = [`${total} game${total === 1 ? '' : 's'} found`];
+  if (blockedCount) parts.push(`${blockedCount} blocked`);
+  if (selectedCount) parts.push(`${selectedCount} selected`);
+  if (gamesSearchQuery.trim()) parts.push(`${getFilteredGames().length} match(es)`);
+
+  return parts.join(' · ');
+}
+
 function renderRunningAppsList() {
+  const filteredApps = getFilteredRunningApps();
+
+  if (runningAppsSummary) {
+    runningAppsSummary.textContent = buildRunningAppsSummary();
+  }
+
+  setCollapsibleExpanded(runningAppsToggle, runningAppsBody, runningAppsExpanded);
   runningAppsList.innerHTML = '';
 
-  for (const app of runningApps) {
+  if (!runningApps.length) {
+    runningAppsEmpty.hidden = false;
+    runningAppsFilterEmpty.hidden = true;
+    runningAppsList.hidden = true;
+    return;
+  }
+
+  runningAppsEmpty.hidden = true;
+
+  if (!filteredApps.length) {
+    runningAppsFilterEmpty.hidden = false;
+    runningAppsList.hidden = true;
+    return;
+  }
+
+  runningAppsFilterEmpty.hidden = true;
+  runningAppsList.hidden = false;
+
+  for (const app of filteredApps) {
     const blocked = isAppBlocked(app.path);
     const li = document.createElement('li');
     li.className = `target-item${blocked ? ' blocked-entry' : ''}`;
@@ -350,9 +487,6 @@ function renderRunningAppsList() {
     `;
     runningAppsList.appendChild(li);
   }
-
-  runningAppsEmpty.hidden = runningApps.length > 0;
-  runningAppsList.hidden = runningApps.length === 0;
 }
 
 async function refreshRunningApps() {
@@ -363,7 +497,7 @@ async function refreshRunningApps() {
     runningApps = await window.blocker.listRunningApps();
     renderRunningAppsList();
     runningAppsStatus.textContent = runningApps.length
-      ? `${runningApps.length} app(s) with a known executable path.`
+      ? `${runningApps.length} app(s) with a known executable path. Expand the list to browse and search.`
       : 'No running apps with a known executable path were found.';
   } catch (err) {
     runningApps = [];
@@ -413,9 +547,34 @@ function renderTargetLists() {
 }
 
 function renderGameList() {
+  const filteredGames = getFilteredGames();
+
+  if (gamesSummary) {
+    gamesSummary.textContent = buildGamesSummary();
+  }
+
+  setCollapsibleExpanded(gamesToggle, gamesBody, gamesListExpanded);
   gameList.innerHTML = '';
 
-  for (const game of scannedGames) {
+  if (!scannedGames.length) {
+    gamesFilterEmpty.hidden = true;
+    selectAllGamesBtn.disabled = true;
+    clearGamesBtn.disabled = selectedGameIds.size === 0;
+    blockSelectedGamesBtn.disabled = selectedGameIds.size === 0;
+    return;
+  }
+
+  if (!filteredGames.length) {
+    gamesFilterEmpty.hidden = false;
+    selectAllGamesBtn.disabled = true;
+    clearGamesBtn.disabled = selectedGameIds.size === 0;
+    blockSelectedGamesBtn.disabled = selectedGameIds.size === 0;
+    return;
+  }
+
+  gamesFilterEmpty.hidden = true;
+
+  for (const game of filteredGames) {
     const blocked = isGameBlocked(game.id);
     const checked = selectedGameIds.has(game.id);
     const item = document.createElement('label');
@@ -431,8 +590,8 @@ function renderGameList() {
     gameList.appendChild(item);
   }
 
-  const hasGames = scannedGames.length > 0;
-  selectAllGamesBtn.disabled = !hasGames;
+  const selectableGames = filteredGames.filter((game) => !isGameBlocked(game.id));
+  selectAllGamesBtn.disabled = selectableGames.length === 0;
   clearGamesBtn.disabled = selectedGameIds.size === 0;
   blockSelectedGamesBtn.disabled = selectedGameIds.size === 0;
 }
@@ -516,14 +675,20 @@ function applyState(state) {
   } else if (schedule?.enabled && schedule.inBlockWindow) {
     statusDot.classList.add('running');
     statusLabel.textContent = 'Inside daily block window';
-    statusDetail.textContent = 'Waiting to apply blocks (may need Administrator).';
+    statusDetail.textContent = isAdmin
+      ? 'Waiting to apply scheduled blocks.'
+      : 'Waiting to apply blocks — Run as Admin first.';
     timerDisplay.hidden = true;
   } else {
     statusDot.classList.add('ready');
     statusLabel.textContent = 'No active blocks';
-    statusDetail.textContent = schedule?.enabled && schedule.nextEvent
+    const scheduleNote = schedule?.enabled && schedule.nextEvent
       ? `Next scheduled ${schedule.nextEvent.type}: ${formatMs(schedule.nextEvent.inMs)}`
       : 'Internet access is currently allowed.';
+    const adminNote = blockingSupported
+      ? (isAdmin ? ' Running as Administrator.' : ' Run as Admin to enable blocking.')
+      : '';
+    statusDetail.textContent = `${scheduleNote}${adminNote}`;
     timerDisplay.hidden = true;
   }
 
@@ -533,19 +698,11 @@ function applyState(state) {
   blockoutRestoreBtn.disabled = !blocked;
   blockNowBtn.disabled = blocked;
 
-  if (blockingSupported && !isAdmin) {
-    adminBtn.hidden = false;
-    platformNote.textContent = isMac
-      ? 'Administrator privileges are required. Use Run as Admin in the sidebar (macOS will prompt for your password).'
-      : 'Administrator privileges are required to apply or remove blocks. Use the button in the sidebar.';
-  } else if (!blockingSupported) {
+  if (!blockingSupported) {
     adminBtn.hidden = true;
     platformNote.textContent = 'Blocking is not supported on this platform. You can still configure settings here.';
   } else {
-    adminBtn.hidden = true;
-    platformNote.textContent = isMac
-      ? 'Use “Remove all blocks” on Overview to reverse every active block (pf, hosts, and DNS).'
-      : 'Use “Remove all blocks” on Overview to reverse every active block (firewall, hosts, and DNS).';
+    updateAdminUi({ blockingSupported, isAdmin, isMac });
   }
 }
 
@@ -636,6 +793,38 @@ confirmBeforeBlockInput.addEventListener('change', saveSettings);
 confirmBeforeUnblockInput.addEventListener('change', saveSettings);
 
 openConfigFolderBtn.addEventListener('click', () => window.blocker.openConfigFolder());
+openLogFolderBtn.addEventListener('click', () => window.blocker.openLogFolder());
+
+async function loadLogViewer() {
+  if (!logViewer) return;
+
+  try {
+    const result = await window.blocker.readLog({ maxLines: 200 });
+    if (logDialogPath) {
+      const suffix = result.truncated ? ` (showing last ${result.lineCount} of ${result.totalLines} lines)` : '';
+      logDialogPath.textContent = `${result.path || ''}${suffix}`;
+    }
+    logViewer.textContent = result.content || 'No log entries yet.';
+    logViewer.scrollTop = logViewer.scrollHeight;
+  } catch (err) {
+    logViewer.textContent = err.message || 'Failed to read log file.';
+  }
+}
+
+viewLogsBtn?.addEventListener('click', async () => {
+  if (!logDialog) return;
+  logViewer.textContent = 'Loading…';
+  logDialog.showModal();
+  await loadLogViewer();
+});
+
+refreshLogDialogBtn?.addEventListener('click', () => loadLogViewer());
+closeLogDialogBtn?.addEventListener('click', () => logDialog?.close());
+openLogFolderDialogBtn?.addEventListener('click', () => window.blocker.openLogFolder());
+
+window.blocker.getLogPath().then((logPath) => {
+  if (logPathInput) logPathInput.value = logPath || '';
+});
 
 scheduleEnabledInput.addEventListener('change', async () => {
   blockTimeInput.disabled = !scheduleEnabledInput.checked;
@@ -767,7 +956,7 @@ scanGamesBtn.addEventListener('click', async () => {
     scannedGames = await window.blocker.scanGames();
     selectedGameIds.clear();
     gamesScanStatus.textContent = scannedGames.length
-      ? `Found ${scannedGames.length} game(s). Select and add to your block list.`
+      ? `Found ${scannedGames.length} game(s). Expand the list to browse, search, and add to your block list.`
       : 'No games found. Try running as Administrator.';
     renderGameList();
   } catch (err) {
@@ -777,7 +966,7 @@ scanGamesBtn.addEventListener('click', async () => {
   }
 });
 
-gameList.addEventListener('change', (event) => {
+gameList?.addEventListener('change', (event) => {
   const checkbox = event.target.closest('[data-game-id]');
   if (!checkbox) return;
   if (checkbox.checked) selectedGameIds.add(checkbox.dataset.gameId);
@@ -785,10 +974,39 @@ gameList.addEventListener('change', (event) => {
   renderGameList();
 });
 
+runningAppsToggle?.addEventListener('click', () => {
+  runningAppsExpanded = !runningAppsExpanded;
+  renderRunningAppsList();
+  if (runningAppsExpanded) {
+    runningAppsSearch?.focus();
+  }
+});
+
+runningAppsSearch?.addEventListener('input', (event) => {
+  runningAppsSearchQuery = event.target.value;
+  runningAppsExpanded = true;
+  renderRunningAppsList();
+});
+
+gamesToggle?.addEventListener('click', () => {
+  gamesListExpanded = !gamesListExpanded;
+  renderGameList();
+  if (gamesListExpanded) {
+    gamesSearch?.focus();
+  }
+});
+
+gamesSearch?.addEventListener('input', (event) => {
+  gamesSearchQuery = event.target.value;
+  gamesListExpanded = true;
+  renderGameList();
+});
+
 selectAllGamesBtn.addEventListener('click', () => {
-  selectedGameIds = new Set(
-    scannedGames.filter((game) => !isGameBlocked(game.id)).map((game) => game.id)
-  );
+  const visibleGames = getFilteredGames().filter((game) => !isGameBlocked(game.id));
+  for (const game of visibleGames) {
+    selectedGameIds.add(game.id);
+  }
   renderGameList();
 });
 
@@ -870,7 +1088,10 @@ clearPasswordBtn.addEventListener('click', async () => {
   }
 });
 
-adminBtn.addEventListener('click', () => window.blocker.requestAdmin());
+adminBtn.addEventListener('click', () => {
+  if (adminBtn.disabled || adminBtn.classList.contains('is-elevated')) return;
+  window.blocker.requestAdmin();
+});
 
 let speedTestRunning = false;
 let speedProgressUnsubscribe = null;
